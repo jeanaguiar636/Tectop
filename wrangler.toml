@@ -1,0 +1,14 @@
+name = "tectop-backend"
+main = "worker.js"
+compatibility_date = "2026-10-04"
+
+[env.production]
+# Bind do Banco de Dados D1
+d1_databases = [
+  { binding = "DB", database_name = "tectop-db", database_id = "SEU_ID_D1" }
+]
+
+# Bind do Armazenamento R2
+r2_buckets = [
+  { binding = "TECTOP_BUCKET", bucket_name = "tectop-media-bucket" }
+]
