@@ -1,102 +1,2344 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tectop - Chat Técnico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="bg-slate-100 h-screen flex flex-col justify-between" x-data="chatApp()">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zap Leve - Chat & Chamadas P2P Grátis</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00a884">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        :root {
+            --bg-app: #ffffff;
+            --text-app: #111111;
+            --header-bg: #00a884;
+            --chat-bg: #efeae2;
+            --input-bg: #f0f2f5;
+            --msg-minha: #d9fdd3;
+            --msg-outra: #ffffff;
+            --border-color: #d1d7db;
+        }
+        body.dark-mode {
+            --bg-app: #111b21;
+            --text-app: #e9edef;
+            --header-bg: #202c33;
+            --chat-bg: #0b141a;
+            --input-bg: #202c33;
+            --msg-minha: #005c4b;
+            --msg-outra: #202c33;
+            --border-color: #222d34;
+        }
 
-    <!-- Cabeçalho -->
-    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 class="font-bold text-lg">Tectop - Atendimento</h1>
-        <span class="text-xs bg-blue-500 px-2 py-1 rounded">Online (Cloudflare)</span>
-    </header>
-
-    <!-- Corpo das Mensagens -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-3">
-        <template x-for="msg in messages" :key="msg.id">
-            <div :class="msg.sender === currentUser ? 'text-right' : 'text-left'">
-                <div class="inline-block p-3 rounded-lg max-w-xs md:max-w-md shadow"
-                     :class="msg.sender === currentUser ? 'bg-blue-500 text-white' : 'bg-white text-slate-800'">
-                    
-                    <!-- Texto -->
-                    <template x-if="msg.type === 'text'">
-                        <p x-text="msg.content"></p>
-                    </template>
-
-                    <!-- Imagem -->
-                    <template x-if="msg.type === 'image'">
-                        <img :src="msg.content" class="rounded max-h-48 object-cover cursor-pointer">
-                    </template>
-
-                    <!-- Áudio -->
-                    <template x-if="msg.type === 'audio'">
-                        <audio controls :src="msg.content" class="w-full"></audio>
-                    </template>
-
-                </div>
-                <span class="block text-[10px] text-slate-400 mt-1" x-text="msg.sender"></span>
-            </div>
-        </template>
-    </div>
-
-    <!-- Barra de Envio -->
-    <div class="bg-white p-3 border-t flex items-center gap-2">
-        <!-- Input de Ficheiro (Foto/Áudio) -->
-        <input type="file" id="fileInput" class="hidden" @change="uploadFile">
-        <button @click="document.getElementById('fileInput').click()" class="bg-slate-200 p-2 rounded-full text-slate-600 hover:bg-slate-300">
-            📎
-        </button>
-
-        <!-- Input de Texto -->
-        <input type="text" x-model="newMessage" @keydown.enter="sendText" placeholder="Escreva a mensagem ou descreva o problema..." class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:border-blue-500">
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg-app); 
+            color: var(--text-app);
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            height: 100dvh; 
+            overflow: hidden; 
+            transition: background 0.3s, color 0.3s;
+        }
+        .container { 
+            width: 100%; 
+            height: 100%; 
+            background: var(--bg-app); 
+            display: flex; 
+            flex-direction: column; 
+            position: relative;
+        }
         
-        <button @click="sendText" class="bg-blue-600 text-white px-4 py-2 rounded-full font-medium">Enviar</button>
+        .hidden { display: none !important; }
+        h2, h3 { color: var(--header-bg); margin-top: 0; }
+        
+        .screen-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            overflow: hidden;
+            background: var(--bg-app);
+            width: 100%;
+            height: 100%;
+        }
+
+        .logo-area { text-align: center; margin: 15px 0; }
+        .logo-area span { font-size: 45px; }
+        .logo-area h1 { font-size: 26px; color: var(--header-bg); margin: 5px 0 0 0; }
+
+        .botao-flutuante-loja {
+            position: fixed;
+            bottom: 125px;
+            right: 18px;
+            background-color: #27ae60;
+            color: white;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            z-index: 999;
+            text-decoration: none;
+            transition: transform 0.2s, background-color 0.2s;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        .botao-flutuante-loja:hover { transform: scale(1.08); background-color: #219653; }
+        .botao-flutuante-loja svg { width: 24px; height: 24px; fill: currentColor; }
+        
+        input, textarea, button, select { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; outline: none; background: var(--input-bg); color: var(--text-app); }
+        input:focus { border-color: #00a884; }
+        button { background: #00a884; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-alt { background: #075e54; }
+        .btn-danger { background: #ea0038; }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--bg-app); color: var(--text-app); padding: 20px; border-radius: 8px; width: 100%; max-width: 420px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid var(--border-color); max-height: 85vh; overflow-y: auto; }
+        .close-modal { background: #ea0038; padding: 8px 15px; margin-top: 15px; display: block; text-align: center; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+
+        #lista-produtos-vitrine > p, #lista-produtos-vitrine > .col-total { grid-column: 1 / -1; }
+        .contact-list { flex: 1; border: none; overflow-y: auto; padding: 0; margin-bottom: 10px; background: var(--bg-app); }
+        .contact-item { padding: 12px 10px; margin-bottom: 2px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--bg-app); }
+        .contact-item:hover { opacity: 0.8; }
+        .contact-info { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #075e54; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #fff; font-weight: bold; flex-shrink: 0; cursor: pointer; }
+        .contact-name { font-weight: 500; color: var(--text-app); font-size: 15px; }
+
+        .chat-box { flex: 1; border: none; overflow-y: auto; padding: 12px; margin-bottom: 0; background: var(--chat-bg); display: flex; flex-direction: column; gap: 6px; }
+        .msg { padding: 8px 12px; border-radius: 7.5px; background: var(--msg-outra); color: var(--text-app); max-width: 88%; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); display: flex; gap: 8px; align-items: flex-start; word-break: break-word; position: relative; }
+        .msg-minha { background: var(--msg-minha); margin-left: auto; flex-direction: row-reverse; }
+        .msg-content { flex: 1; overflow: hidden; }
+        
+        .msg-content a { color: #0275d8; text-decoration: underline; word-break: break-all; }
+        body.dark-mode .msg-content a { color: #58a6ff; }
+        
+        .embed-container { margin-top: 6px; border-radius: 6px; overflow: hidden; background: #000; width: 100%; max-width: 320px; aspect-ratio: 16/9; }
+        .embed-container iframe, .embed-container blockquote { width: 100%; height: 100%; border: none; margin: 0; }
+
+        .msg-download-btn { background: #014c8a; border: none; color: #ffffff; padding: 8px 14px; font-size: 13px; border-radius: 6px; cursor: pointer; margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .msg-download-btn:hover { background: #003366; }
+        
+        .msg-product-body { padding: 4px 0; display: flex; flex-direction: column; gap: 6px; }
+
+        .wa-audio-player { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 20px; margin-top: 4px; min-width: 210px; }
+        .wa-play-btn { width: 36px; height: 36px; border-radius: 50%; background: #00a884; color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; flex-shrink: 0; padding: 0; margin: 0; }
+        .wa-audio-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .wa-audio-bar { width: 100%; height: 4px; background: #ccc; border-radius: 2px; position: relative; cursor: pointer; }
+        .wa-audio-progress { height: 100%; background: #00a884; width: 0%; border-radius: 2px; transition: width 0.1s linear; }
+        .wa-audio-time { font-size: 10px; opacity: 0.7; font-family: monospace; }
+
+        #call-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111b21; z-index: 1000; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; color: white; }
+        .call-videos { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 12px; background: #0b141a; margin: 10px 0; }
+        #remote-video { width: 100%; height: 100%; object-fit: cover; }
+        #local-video { position: absolute; bottom: 15px; right: 15px; width: 110px; height: 150px; object-fit: cover; border-radius: 8px; border: 2px solid white; background: #222; }
+        
+        #call-placeholder-info { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; z-index: 2; }
+        .call-avatar-grande { width: 90px; height: 90px; border-radius: 50%; background: #00a884; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: bold; border: 3px solid white; }
+
+        .call-controls { display: flex; justify-content: center; gap: 20px; padding: 15px; }
+        .call-btn { width: 56px; height: 56px; border-radius: 50%; border: none; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; }
+        .btn-hangup { background: #ea0038; }
+        .btn-mic, .btn-cam { background: #333; }
+
+        .chat-input-area { display: flex; flex-direction: column; background: var(--input-bg); padding: 6px 10px; border-top: 1px solid var(--border-color); gap: 4px; }
+        .input-group { display: flex; gap: 6px; align-items: center; width: 100%; position: relative; }
+        .input-group input { margin: 0; background: var(--bg-app); border-radius: 20px; padding: 10px 14px 10px 42px; border: 1px solid var(--border-color); color: var(--text-app); }
+        
+        .action-btn { width: 38px; height: 38px; border-radius: 50%; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; flex-shrink: 0; color: white; border: none; cursor: pointer; }
+        .mic-rec-btn { background: #ff9800; }
+        .mic-rec-btn.gravando { background: #ea0038; animation: pulsar 1.2s infinite; }
+        
+        .clip-btn { position: absolute; left: 6px; background: transparent; border: none; color: #54657f; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; padding: 0; margin: 0; z-index: 5; }
+        .clip-btn:hover { background: rgba(0,0,0,0.05); }
+
+        #menu-anexos { display: none; position: absolute; bottom: 65px; left: 10px; background: var(--bg-app); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; flex-direction: column; padding: 6px; width: 160px; }
+        .anexo-opcao { display: flex; align-items: center; gap: 10px; padding: 10px; font-size: 13px; color: var(--text-app); cursor: pointer; border-radius: 4px; text-decoration: none; }
+        .anexo-opcao:hover { background: var(--input-bg); }
+
+        @keyframes pulsar { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); color: white; padding: 10px 14px; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .user-info-area { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        
+        .texto-voltar { color: #ffffff; font-size: 14px; font-weight: bold; cursor: pointer; background: none; border: none; padding: 0; margin-right: 6px; text-decoration: underline; }
+        .texto-voltar:hover { opacity: 0.8; }
+
+        .usuario-editavel { font-size: 11px; color: #e0f2f1; cursor: pointer; text-decoration: underline; display: inline-block; }
+        .usuario-editavel:hover { color: #ffffff; }
+
+        .btn-topo-padrao { border: none; color: white; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; height: 28px; padding: 0 8px; white-space: nowrap; }
+        .btn-topo-limpar { background: #ea0038; }
+        .btn-topo-video { background: #007bff; }
+        .btn-topo-telefone { background: #28a745; }
+        .btn-topo-sair { background: #ea0038; }
+        
+        .quick-replies { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0; white-space: nowrap; align-items: center; scrollbar-width: none; }
+        .quick-replies::-webkit-scrollbar { display: none; }
+        .quick-chip { background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-app); padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .quick-chip:hover { border-color: #00a884; color: #00a884; }
+        .btn-config-quick { background: #075e54; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+        video, img.msg-img { max-width: 100%; border-radius: 8px; margin-top: 6px; display: block; }
+        img.msg-img { max-height: 280px; width: 100%; object-fit: cover; background: #000; cursor: pointer; transition: opacity 0.2s; }
+        img.msg-img:hover { opacity: 0.92; }
+
+        #modal-zoom-imagem { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        #modal-zoom-imagem img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+<script>
+// Aviso na tela se o app não carregar ou der erro (ajuda a descobrir por que "congelou")
+(function () {
+    function mostrar(t) {
+        var b = document.getElementById('zl-erro');
+        if (!b) { b = document.createElement('div'); b.id = 'zl-erro'; b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#b00020;color:#fff;font:12px sans-serif;padding:8px 10px;z-index:99999;'; document.body.appendChild(b); }
+        b.textContent = t;
+    }
+    window.addEventListener('error', function (e) { mostrar('Erro: ' + (e.message || 'falha ao carregar')); });
+    window.addEventListener('unhandledrejection', function (e) { mostrar('Erro: ' + ((e.reason && e.reason.message) || e.reason)); });
+    setTimeout(function () { if (typeof window.entrar !== 'function') mostrar('O app não terminou de carregar. Verifique a internet e atualize a página.'); }, 8000);
+})();
+</script>
+
+<div class="container">
+    <!-- Detalhe do produto (ao tocar na foto do catálogo) -->
+    <div id="modal-produto" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:2000; background:rgba(0,0,0,0.93); flex-direction:column; align-items:center; justify-content:center; padding:16px; overflow-y:auto;">
+        <img id="mp-img" src="" alt="" style="max-width:100%; max-height:52vh; object-fit:contain; border-radius:6px; background:#fff; margin:0;">
+        <div id="mp-sem-img" style="display:none; font-size:80px;">📦</div>
+        <div style="color:white; text-align:center; margin-top:12px; max-width:420px;">
+            <b id="mp-titulo" style="font-size:16px; line-height:1.3;"></b><br>
+            <span id="mp-preco" style="font-size:20px; font-weight:bold; color:#7be0b8;"></span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; width:100%; max-width:420px; margin-top:16px;">
+            <button id="mp-btn-falar" style="background:#00a884; margin:0; padding:13px; border-radius:24px; font-size:15px;" onclick="falarSobreProduto()">💬 Falar com o vendedor</button>
+            <button style="background:#5f6b73; margin:0; padding:13px; border-radius:24px; font-size:15px;" onclick="fecharDetalheProduto()">↩ Voltar para o catálogo</button>
+        </div>
     </div>
 
-    <script>
-        function chatApp() {
-            return {
-                currentUser: 'Técnico_João',
-                roomId: 'sala_cliente_123',
-                messages: [],
-                newMessage: '',
-                async init() {
-                    await this.fetchMessages();
-                    // Polling leve ou WebSocket para atualizar em tempo real
-                    setInterval(() => this.fetchMessages(), 3000);
-                },
-                async fetchMessages() {
-                    const res = await fetch(`https://seu-worker.sua-subconta.workers.dev/api/messages?room_id=${this.roomId}`);
-                    this.messages = await res.json();
-                },
-                async sendText() {
-                    if (!this.newMessage.trim()) return;
-                    // Lógica para enviar texto via POST para o Worker
-                    this.newMessage = '';
-                },
-                async uploadFile(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
+    <!-- Página pública da loja (zapleve.alibr.com.br/nomedaloja) -->
+    <div id="loja-publica" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:1500; background: var(--bg-app); overflow-y:auto;">
+        <div style="background: var(--header-bg); color:white; padding:14px; display:flex; align-items:center; gap:10px;">
+            <img id="lp-foto" class="avatar hidden" src="" alt="">
+            <div id="lp-inicial" class="avatar">?</div>
+            <div>
+                <div id="lp-nome" style="font-weight:bold; font-size:17px;">Loja</div>
+                <div style="font-size:11px; opacity:0.85;">Loja no Zap Leve ⚡</div>
+            </div>
+        </div>
+        <div id="lp-lista" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 12px 100px 12px;"></div>
+        <div style="position:fixed; left:0; right:0; bottom:0; padding:10px; background: var(--bg-app); border-top:1px solid var(--border-color); display:flex; gap:8px;">
+            <button onclick="falarComVendedor()" style="flex:2; margin:0; padding:12px; border-radius:20px; font-size:14px;">💬 Falar com o vendedor</button>
+            <button class="btn-alt" onclick="fecharLojaPublica()" style="flex:1; margin:0; padding:12px; border-radius:20px; font-size:13px;">Abrir app</button>
+        </div>
+    </div>
+    <!-- Modal de Ampliação de Imagem -->
+    <div id="modal-zoom-imagem" onclick="fecharZoomImagem()">
+        <img id="imagem-zoom-src" src="">
+        <span style="color: white; margin-top: 15px; font-size: 13px; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; cursor: pointer;">Toque em qualquer lugar para fechar</span>
+    </div>
 
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    formData.append("room_id", this.roomId);
-                    formData.append("sender", this.currentUser);
-                    formData.append("type", file.type.startsWith('image') ? 'image' : 'audio');
+    <button class="botao-flutuante-loja" onclick="abrirVitrineAfiliado()" title="Vitrine de Produtos">
+        <svg viewBox="0 0 24 24">
+            <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+        </svg>
+    </button>
 
-                    await fetch(`https://seu-worker.sua-subconta.workers.dev/api/upload`, {
-                        method: "POST",
-                        body: formData
-                    });
+    <!-- Modal de Perfil / Bio (Com aviso vermelho se incompleto, botão de instalação e edição do nome de utilizador) -->
+    <div id="modal-perfil-usuario" class="modal">
+        <div class="modal-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative;">
+            
+            <!-- Aviso Vermelho na Bio -->
+            <div id="alerta-perfil-bio" class="hidden" style="background-color: #ea0038; color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; width: 100%; text-align: center; margin-bottom: 4px;">
+                ⚠️ Complete o seu perfil (Nome, foto, descrição e links)
+            </div>
 
-                    await this.fetchMessages();
+            <div id="perfil-avatar-container" style="position: relative;">
+                <div id="perfil-avatar-grande" class="avatar" style="width: 80px; height: 80px; font-size: 28px; margin-bottom: 5px;">?</div>
+                <img id="perfil-img-grande" class="hidden" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid white;" src="">
+            </div>
+            
+            <h3 id="perfil-nome-exibicao" style="margin: 0; font-size: 20px;">Nome do Utilizador</h3>
+            <p id="perfil-email-exibicao" style="margin: 0; font-size: 12px; opacity: 0.7;"></p>
+            
+            <!-- Botão Flutuante de Instalação no Perfil (se não instalado) -->
+            <button id="btn-instalar-no-perfil" class="hidden" style="background: #005c4b; color: white; border: none; padding: 10px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer;" onclick="abrirInstalacaoDoPerfil()">
+                📲 Baixar e Instalar Aplicativo
+            </button>
+
+            <button id="btn-ativar-push" class="hidden" style="background: #ea6a00; color: white; border: none; padding: 10px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;" onclick="ativarNotificacoes()">
+                🔔 Ativar avisos de chamada
+            </button>
+
+            <div style="width: 100%; background: var(--input-bg); padding: 12px; border-radius: 8px; margin-top: 5px; text-align: left; border: 1px solid var(--border-color);">
+                <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: bold; color: var(--header-bg);">🌐 Link de Afiliado / Perfil do Utilizador:</p>
+                <div id="perfil-link-container" style="font-size: 13px; word-break: break-all;">Nenhum link configurado.</div>
+            </div>
+
+            <!-- Painel de Edição do Perfil (Nome, Foto e Link) -->
+            <div id="meu-painel-edicao-link" class="hidden" style="width: 100%; margin-top: 5px; border-top: 1px solid var(--border-color); padding-top: 10px; text-align: left;">
+                <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: bold;">Editar o Meu Perfil:</p>
+                
+                <label style="font-size: 11px; opacity: 0.8;">Meu Nome de Utilizador:</label>
+                <input type="text" id="input-meu-nome" placeholder="Digite seu nome" style="font-size: 12px; padding: 8px; margin-bottom: 6px;">
+
+                <label style="font-size: 11px; opacity: 0.8;">Alterar Foto de Perfil:</label>
+                <input type="file" id="input-foto-perfil" accept="image/*" style="font-size: 11px; padding: 6px; margin-bottom: 6px;">
+                
+                <label style="font-size: 11px; opacity: 0.8;">Meu Link Pessoal / Afiliado / Vídeos:</label>
+                <input type="text" id="input-meu-link" placeholder="https://seu-link-aqui.com" style="font-size: 12px; padding: 8px; margin-bottom: 6px;">
+                
+                <button class="btn-alt" style="padding: 6px; font-size: 12px; margin: 0; width: 100%;" onclick="salvarMeuPerfilCompleto()">💾 Salvar Perfil</button>
+                <button style="padding: 6px; font-size: 12px; margin: 6px 0 0 0; width: 100%; background: #6c4ab6;" onclick="testarAviso()">🧪 Testar aviso neste celular</button>
+                <button class="btn-alt" style="padding: 6px; font-size: 12px; margin: 6px 0 0 0; width: 100%;" onclick="copiarMeuLink()">🔗 Copiar meu link de atendimento</button>
+                <button class="btn-alt" style="padding: 6px; font-size: 12px; margin: 6px 0 0 0; width: 100%; background: #d4a24c;" onclick="abrirMinhaLoja()">🏪 Criar / gerenciar minha loja</button>
+            </div>
+
+            <p style="font-size:10px; opacity:0.5; margin:6px 0 0 0;">Versão 05/10b · falar sobre o produto</p>
+            <div class="close-modal" onclick="fecharPerfilUsuario()" style="width: 100%; margin-top: 10px;">Fechar</div>
+        </div>
+    </div>
+
+    <!-- TELA DE CHAMADA -->
+    <div id="call-screen" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="call-status" style="margin: 0; color: white;">A ligar...</h3>
+            <button class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; border-radius: 4px;" onclick="encerrarChamada()">Desligar</button>
+        </div>
+        <div class="call-videos">
+            <div id="call-placeholder-info">
+                <div id="call-active-avatar" class="call-avatar-grande">?</div>
+                <h2 id="call-active-name" style="margin: 0; color: white; font-size: 22px;">Nome</h2>
+                <p style="margin: 0; color: #aaa; font-size: 13px;">A aguardar resposta...</p>
+            </div>
+            <video id="remote-video" autoplay playsinline></video>
+            <video id="local-video" autoplay playsinline muted></video>
+        </div>
+        <div class="call-controls">
+            <button class="call-btn btn-mic" onclick="alternarMicrofone()" id="btn-toggle-mic">🎙</button>
+            <button class="call-btn btn-cam" onclick="alternarCamera()" id="btn-toggle-cam">📷</button>
+            <button class="call-btn btn-hangup" onclick="encerrarChamada()">📞</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CHAMADA ENTRANTE -->
+    <div id="modal-incoming-call" class="modal">
+        <div class="modal-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 25px;">
+            <div id="incoming-caller-avatar" class="avatar" style="width: 75px; height: 75px; font-size: 26px;">?</div>
+            <h3 id="incoming-caller-name" style="margin: 0; font-size: 18px;">Chamada Entrante...</h3>
+            <p style="margin: 0; font-size: 12px; opacity: 0.7;">A receber chamada de voz/vídeo</p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px; width: 100%;">
+                <button class="btn-danger" style="flex: 1; padding: 10px; border-radius: 6px; margin: 0;" onclick="recusarChamada()">Recusar</button>
+                <button class="btn-alt" style="flex: 1; padding: 10px; border-radius: 6px; background: #00a884; margin: 0;" onclick="aceitarChamada()">Atender</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VITRINE -->
+    <div id="modal-vitrine" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 id="titulo-loja" style="margin:0;">🛍️ Vitrine de Produtos</h3>
+                <button id="btn-abrir-admin" class="btn-alt hidden" style="width:auto; padding:4px 8px; font-size:10px; margin:0; background:#d4a24c;" onclick="togglePainelAdmin()">⚙️ Painel Admin</button>
+            </div>
+
+            <div id="painel-admin-geral" class="hidden" style="background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border-color);">
+                <div id="abas-admin" style="display:flex; gap:4px; margin-bottom:8px;">
+                    <button class="btn-alt" style="flex:1; padding:5px; font-size:11px; margin:0;" onclick="mudarAbaAdmin('produtos')">📦 Produtos</button>
+                    <button class="btn-alt" style="flex:1; padding:5px; font-size:11px; margin:0; background:#333;" onclick="mudarAbaAdmin('utilizadores')">👥 Usuários e recursos</button>
+                </div>
+
+                <div id="aba-admin-produtos">
+                    <p style="font-size:11px; font-weight:bold; margin:0 0 4px 0; color: var(--header-bg);">Adicionar Produto:</p>
+                    <input type="text" id="admin-prod-titulo" placeholder="Nome do Produto" style="font-size:11px; padding:6px; margin-bottom:4px;">
+                    <input type="text" id="admin-prod-preco" placeholder="Preço (ex: 49.90)" style="font-size:11px; padding:6px; margin-bottom:4px;">
+                    <label style="font-size:11px; opacity:0.8;">📷 Foto do produto (da galeria):</label>
+                    <input type="file" id="admin-prod-foto" accept="image/*" style="font-size:11px; padding:6px; margin-bottom:4px;">
+                    <input type="text" id="admin-prod-img" placeholder="ou cole o link da imagem" style="font-size:11px; padding:6px; margin-bottom:4px;">
+                    <input type="text" id="admin-prod-link" placeholder="Link de Afiliado" style="font-size:11px; padding:6px; margin-bottom:6px;">
+                    <div id="bloco-extrator" class="hidden">
+                    <input type="text" id="admin-prod-link-ml" placeholder="Link normal do produto no Mercado Livre (só para preencher)" style="font-size:11px; padding:6px; margin-bottom:4px;">
+                    <button class="btn-alt" id="btn-extrair-ml" style="padding:6px; font-size:11px; margin:0 0 4px 0; background:#ffb300; color:#222;" onclick="extrairProdutoML()">🔍 Preencher automaticamente (Mercado Livre)</button>
+                    <p style="font-size:10px; opacity:0.85; margin:0 0 6px 0; line-height:1.3;">⚠️ O preenchimento automático só funciona com links do <b>Mercado Livre</b>. Para Shopee, Amazon e Shein, preencha à mão.<br>Cole acima o <b>link normal</b> do produto (o que abre o anúncio). O seu link de afiliado vai no campo "Link de Afiliado".</p>
+                    </div>
+                    <button class="btn-alt" style="padding:6px; font-size:11px; margin:0;" onclick="salvarProdutoFirebase()">➕ Salvar Produto</button>
+                </div>
+
+                <div id="aba-admin-utilizadores" class="hidden">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:bold; margin:0 0 8px 0; padding:8px; background: var(--bg-app); border-radius:6px; cursor:pointer;">
+                        <input type="checkbox" id="chk-extrator" style="width:auto; margin:0;" onchange="alternarExtratorML(this.checked)">
+                        🔍 Mostrar o extrator do Mercado Livre para os usuários
+                    </label>
+                    <p style="font-size:11px; font-weight:bold; margin:0 0 4px 0; color: var(--header-bg);">Definir Limite de Vitrine por Usuário:</p>
+                    <div id="lista-usuarios-admin" style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                        <p style="font-size:11px; text-align:center;">A carregar usuários...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="linha-endereco-loja" class="hidden" style="font-size:12px; background: var(--input-bg); padding:8px; border-radius:6px; margin-bottom:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;"></div>
+            <input type="text" id="filtro-vitrine" placeholder="🔍 Pesquisar na vitrine..." oninput="filtrarProdutosLocais()" style="font-size: 12px; padding: 8px;">
+            <div id="lista-produtos-vitrine" style="max-height: 62vh; overflow-y: auto; margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;">
+                <p style="text-align:center; font-size:12px;">A carregar...</p>
+            </div>
+            <div class="close-modal" onclick="fecharVitrineAfiliado()">Fechar</div>
+        </div>
+    </div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="auth-screen" class="screen-content" style="justify-content: center; max-width: 380px; margin: 0 auto;">
+        <div class="logo-area" style="margin-bottom: 25px;">
+            <span>⚡💬</span>
+            <h1 style="margin: 5px 0 0 0;">Zap Leve</h1>
+            <p style="font-size: 13px; margin: 4px 0 0 0; opacity: 0.7;">Chat P2P e utilitários integrados</p>
+        </div>
+        
+        <p id="aviso-convite" class="hidden" style="background:#e8f5e9; color:#1b5e20; padding:8px 10px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center; margin:0 0 6px 0;"></p>
+        <input type="email" id="email" placeholder="Seu e-mail">
+        <input type="password" id="password" placeholder="Sua senha">
+        
+        <div style="display: flex; gap: 8px; margin: 6px 0;">
+            <button class="btn-alt" style="flex: 1; margin: 0; background: #0275d8;" onclick="entrar()">Entrar</button>
+            <button style="flex: 1; margin: 0; background: #28a745;" onclick="cadastrar()">Abrir Conta</button>
+        </div>
+
+        <button class="btn-alt" style="background: #333; margin-top: 10px;" onclick="alternarModoEscuro()">🌓 Alternar Tema Claro / Escuro</button>
+    </div>
+
+    <!-- MODAL INSTALAÇÃO -->
+    <div id="modal-instalar" class="modal">
+        <div class="modal-content">
+            <h3>📲 Instalar o Zap Leve</h3>
+            <p id="instrucoes-texto" style="text-align: left; font-size: 13px; line-height: 1.4;"></p>
+            <div class="close-modal" onclick="fecharInstalacao()">Fechar</div>
+        </div>
+    </div>
+
+    <!-- MODAL RESPOSTAS RÁPIDAS -->
+    <div id="modal-quick-config" class="modal">
+        <div class="modal-content">
+            <h3>⚡ Gerir Respostas Rápidas</h3>
+            <div style="background: var(--input-bg); padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                <input type="text" id="qr-titulo" placeholder="Nome do Atalho (ex: Olá)" style="font-size: 12px; padding: 8px;">
+                <textarea id="qr-texto" placeholder="Mensagem..." style="font-size: 12px; padding: 8px; height: 50px; resize: vertical;"></textarea>
+                <input type="text" id="qr-img" placeholder="URL da Imagem (Opcional)" style="font-size: 12px; padding: 8px;">
+                <input type="text" id="qr-link" placeholder="Link de Afiliado (Opcional)" style="font-size: 12px; padding: 8px;">
+                <button class="btn-alt" style="padding: 8px; font-size: 12px; margin-top: 4px;" onclick="salvarNovaRespostaRapida()">➕ Salvar Atalho</button>
+            </div>
+            <div id="lista-qr-config" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color); background: var(--bg-app); border-radius: 4px; padding: 6px; display: flex; flex-direction: column; gap: 6px;"></div>
+            <div class="close-modal" onclick="fecharModalQuick()">Concluir</div>
+        </div>
+    </div>
+
+    <!-- TELA DE CONTACTOS -->
+    <div id="contacts-screen" class="hidden screen-content" style="padding: 0;">
+        <div class="header-top">
+            <div class="user-info-area" onclick="abrirMeuPerfil()">
+                <div id="meu-avatar-topo-container" style="position:relative;">
+                    <div id="meu-avatar-topo" class="avatar" style="width:36px; height:36px; font-size:13px;">?</div>
+                    <img id="meu-img-topo" class="hidden" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" src="">
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size: 15px; color: white;">Zap Leve ⚡</h3>
+                    <span class="usuario-editavel" id="user-display-contacts" title="Clique para ver seu perfil">A carregar...</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items: center;">
+                <button class="btn-topo-padrao" style="background: rgba(0,0,0,0.2);" onclick="alternarModoEscuro()">🌓</button>
+                <button class="btn-topo-padrao btn-topo-sair btn-sair hidden" onclick="sair()">Sair</button>
+            </div>
+        </div>
+        <div style="padding: 0 12px 12px 12px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <p style="font-weight: 500; font-size: 13px; margin: 12px 0 8px 0; opacity: 0.8; display: flex; justify-content: space-between;">Conversas e Contactos: </p>
+            <div class="contact-list" id="lista-contatos">
+                <p style="text-align:center; opacity:0.6; font-size:13px; margin-top:20px;">A carregar contactos...</p>
+            </div>
+            <button class="btn-alt" style="background: #005c4b; font-size: 13px; padding: 10px; border-radius: 20px;" onclick="indicarAmigo()">📤 Compartilhar / Convidar Amigo</button>
+        </div>
+    </div>
+
+    <!-- TELA DE CHAT -->
+    <div id="chat-screen" class="hidden screen-content" style="padding: 0;">
+        <div class="header-top">
+            <div class="user-info-area">
+                <span class="texto-voltar" onclick="voltarParaContatos()" title="Voltar para Contactos">voltar</span>
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="abrirPerfilContatoSelecionado()">
+                    <div id="chat-avatar-topo-container" style="position:relative;">
+                        <div id="chat-avatar-topo" class="avatar" style="width:36px; height:36px; font-size:13px;">?</div>
+                        <img id="chat-img-topo" class="hidden" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" src="">
+                    </div>
+                    <div>
+                        <h3 id="chat-title" style="margin:0; font-size: 15px; color: white;">Conversando...</h3>
+                        <span style="font-size: 11px; color: #e0f2f1;">ver perfil 👤</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:5px; align-items: center;">
+                <button class="btn-topo-padrao btn-topo-limpar" onclick="limparConversaAtual()" title="Limpar Conversa">Limpar</button>
+                <button class="btn-topo-padrao btn-topo-video" onclick="iniciarChamada(true)" title="Vídeo Chamada">📹 Vídeo</button>
+                <button class="btn-topo-padrao btn-topo-telefone" onclick="iniciarChamada(false)" title="Chamada de Áudio">📞 Áudio</button>
+                <button class="btn-topo-padrao btn-topo-sair btn-sair hidden" onclick="sair()" title="Sair">Sair</button>
+            </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="padding: 6px 12px; background: var(--input-bg); border-bottom: 1px solid var(--border-color);">
+                <input type="text" id="input-busca-msg" placeholder="🔍 Pesquisar nas mensagens..." oninput="filtrarMensagensLocais()" style="margin:0; padding:6px 10px; font-size:12px; border-radius:12px;">
+            </div>
+
+            <div class="chat-box" id="mensagens"></div>
+            
+            <div class="chat-input-area">
+                <div class="quick-replies" id="barra-atalhos-rapidos">
+                    <button class="btn-config-quick" onclick="abrirModalQuick()" title="Gerir Atalhos">⚙️</button>
+                </div>
+                <div class="input-group">
+                    <button class="clip-btn" onclick="toggleMenuAnexos(event)" title="Anexar Mídia">📎</button>
+
+                    <div id="menu-anexos">
+                        <div class="anexo-opcao" onclick="abrirMinhaLoja()">🛍️ Meus produtos</div>
+                        <label class="anexo-opcao">
+                            📷 Enviar Imagem
+                            <input type="file" id="imagem-input" accept="image/*" style="display: none;" onchange="enviarImagemGlobal(this); fecharMenuAnexos();">
+                        </label>
+                        <label class="anexo-opcao">
+                            📹 Enviar Vídeo
+                            <input type="file" id="video-input" accept="video/*" style="display: none;" onchange="enviarVideoGlobal(this); fecharMenuAnexos();">
+                        </label>
+                    </div>
+
+                    <input type="text" id="mensagem-texto" placeholder="Mensagem ou link (www..., https://...)" onkeypress="if(event.key === 'Enter') enviarMensagemPrivada()">
+                    <button id="btn-gravar-audio" class="action-btn mic-rec-btn" onclick="toggleGravarAudio()" title="Gravar Áudio Global">🎙️</button>
+                </div>
+                <button onclick="enviarMensagemPrivada()" style="padding: 8px; font-size: 13px; border-radius: 20px; background: #00a884;">Enviar Mensagem / Link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, setDoc, doc, getDoc, updateDoc, getDocs, deleteDoc, where, limit, Timestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+
+    // Segurança: escape de HTML e validação de URLs
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const urlSegura = (u, midia = false) => {
+        u = String(u || '').trim();
+        if (/^https?:\/\//i.test(u)) return u;
+        if (midia && /^data:(image|video|audio)\/[a-z0-9.+-]+;base64,/i.test(u)) return u;
+        return '';
+    };
+    const contatosCache = {};
+    const lerCache = (k, ttl) => { try { const o = JSON.parse(localStorage.getItem(k)); if (o && Date.now() - o.ts < ttl) return o.d; } catch (_) {} return null; };
+    const salvarCache = (k, d) => { try { localStorage.setItem(k, JSON.stringify({ ts: Date.now(), d })); } catch (_) {} };
+    const entradaDir = (x) => ({
+        n: String(x.nome || String(x.email || '').split('@')[0] || 'Usuário').slice(0, 60),
+        f: /^https?:\/\//i.test(x.fotoUrl || '') ? String(x.fotoUrl).slice(0, 300) : '',
+        l: String(x.linkPessoal || '').slice(0, 200)
+    });
+    let msgsAtuais = [], msgsChave = '', msgsBase = 0, temAnteriores = false, tokenEscuta = 0;
+
+    // Contas sem documento de perfil (cadastro interrompido) não conseguem salvar nada: cria só os campos básicos
+    async function garantirDocUsuario() {
+        await setDoc(doc(db, "usuarios", usuarioAtual.uid), { email: usuarioAtual.email, bloqueado: false, limiteProdutos: 10 }, { merge: true });
+    }
+
+    // Perfil próprio em cache (24 h): evita ler o Firestore a cada abertura
+    async function obterMeuPerfil(forcar = false) {
+        const chave = 'zl_perfil_' + usuarioAtual.uid;
+        const c = forcar ? null : lerCache(chave, 24 * 3600 * 1000);
+        if (c) return c;
+        const snap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+        if (!snap.exists()) {
+            try { await garantirDocUsuario(); } catch (err) { console.warn('Perfil:', err.message); }
+            return { email: usuarioAtual.email };
+        }
+        const d = snap.data();
+        const p = { nome: d.nome || '', fotoUrl: d.fotoUrl || '', linkPessoal: d.linkPessoal || '', limiteProdutos: d.limiteProdutos || 10, handle: d.handle || '', slug: d.slug || '', email: d.email || usuarioAtual.email };
+        salvarCache(chave, p);
+        return p;
+    }
+
+    // Contatos PRIVADOS: cada usuário tem a própria agenda (1 documento) e um link de atendimento
+    const gerarHandle = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+    const perfilPublico = (p) => ({ uid: usuarioAtual.uid, ...entradaDir(p) });
+    let unsubAgenda = null;
+
+    const slugInicial = (function () {
+        let s = new URLSearchParams(location.search).get('s') || location.pathname.replace(/^\/+|\/+$/g, '');
+        s = String(s || '').toLowerCase();
+        if (!/^[a-z0-9-]{3,30}$/.test(s)) return '';
+        history.replaceState(null, '', '/' + s);
+        return s;
+    })();
+    let lojaPublica = null;
+    let lojaPublicaItens = [];
+    let detalheProduto = null;
+    const RESERVADOS = ['admin', 'api', 'app', 'index', 'login', 'sw', 'manifest', 'toque', 'icon', 'badge', 'cname', 'loja', 'lojas', 'perfil', 'config', 'u', 'www'];
+    const limparSlug = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+
+    (function () { // link de convite: ?u=codigo
+        const h = new URLSearchParams(location.search).get('u');
+        if (h && /^[a-z0-9]{6,12}$/.test(h)) { localStorage.setItem('zl_convite', h); history.replaceState(null, '', location.pathname); }
+    })();
+
+    async function garantirHandle(p) {
+        if (p.handle) return p.handle;
+        if (p.limiteProdutos === undefined) return ''; // conta ainda sendo criada
+        for (let i = 0; i < 3; i++) {
+            const h = gerarHandle();
+            try {
+                await setDoc(doc(db, "perfis", h), perfilPublico(p));
+                await updateDoc(doc(db, "usuarios", usuarioAtual.uid), { handle: h });
+                p.handle = h;
+                salvarCache('zl_perfil_' + usuarioAtual.uid, p);
+                localStorage.setItem('zl_pubmeu_' + usuarioAtual.uid, JSON.stringify(perfilPublico(p)));
+                return h;
+            } catch (err) { console.warn('Link de atendimento:', err.message); }
+        }
+        return '';
+    }
+
+    async function sincronizarPerfilPublico(p) {
+        if (!p.handle) return;
+        const pub = perfilPublico(p);
+        const chave = 'zl_pubmeu_' + usuarioAtual.uid;
+        if (localStorage.getItem(chave) === JSON.stringify(pub)) return;
+        try { await setDoc(doc(db, "perfis", p.handle), pub); localStorage.setItem(chave, JSON.stringify(pub)); }
+        catch (err) { console.warn('Perfil público:', err.message); }
+    }
+
+    // Coloca "eu" na agenda do outro (com meu token de aviso) para ele poder me chamar
+    async function apresentarAoContato(uidOutro) {
+        const meu = await obterMeuPerfil();
+        const base = entradaDir({ ...meu, email: usuarioAtual.email });
+        const k = (localStorage.getItem('zapleve_fcm_' + usuarioAtual.uid) || '').slice(0, 400);
+        const sig = JSON.stringify({ ...base, k });
+        const chave = 'zl_hs_' + usuarioAtual.uid + '_' + uidOutro;
+        if (localStorage.getItem(chave) === sig) return;
+        await setDoc(doc(db, "agenda", uidOutro), { c: { [usuarioAtual.uid]: { ...base, k, t: Date.now() } } }, { merge: true });
+        localStorage.setItem(chave, sig);
+    }
+
+    async function processarConvite() {
+        const h = localStorage.getItem('zl_convite');
+        if (!h || !usuarioAtual) return;
+        localStorage.removeItem('zl_convite');
+        try {
+            const snap = await getDoc(doc(db, "perfis", h));
+            if (!snap.exists()) return alert('Link de convite inválido ou expirado.');
+            const p = snap.data();
+            if (p.uid === usuarioAtual.uid) return;
+            await setDoc(doc(db, "agenda", usuarioAtual.uid), { c: { [p.uid]: { n: p.n || 'Usuário', f: p.f || '', l: p.l || '', t: Date.now() } } }, { merge: true });
+            await apresentarAoContato(p.uid);
+            window.abrirChat(p.uid, p.n || 'Usuário', p.f || '');
+        } catch (e) { alert('Erro ao abrir o convite: ' + e.message); }
+    }
+
+    async function meuLinkAtendimento() {
+        let url = window.location.origin + '/';
+        try {
+            const p = await obterMeuPerfil();
+            if (p.slug) return url + p.slug;
+            const h = p.handle || await garantirHandle(p);
+            if (h) url += '?u=' + h;
+        } catch (_) {}
+        return url;
+    }
+
+    // ---------- página pública da loja ----------
+    async function abrirLojaPublica(slug) {
+        const ov = document.getElementById('loja-publica');
+        const lista = document.getElementById('lp-lista');
+        ov.classList.remove('hidden');
+        lista.innerHTML = "<p style='grid-column:1/-1; text-align:center; font-size:13px;'>Carregando loja...</p>";
+        try {
+            const sp = await getDoc(doc(db, "slugs", slug));
+            if (!sp.exists()) { lista.innerHTML = "<p style='grid-column:1/-1; text-align:center; font-size:13px;'>Loja não encontrada.</p>"; return; }
+            const p = sp.data();
+            lojaPublica = { uid: p.uid, n: p.n || 'Loja', f: p.f || '', slug };
+            const lp = await getDoc(doc(db, "lojas", p.uid));
+            const loja = lp.exists() ? lp.data() : { itens: [] };
+            const nome = loja.nome || p.n || 'Loja';
+            document.getElementById('lp-nome').innerText = nome;
+            document.title = nome + ' - Zap Leve';
+            const foto = urlSegura(p.f, true);
+            const img = document.getElementById('lp-foto'), ini = document.getElementById('lp-inicial');
+            if (foto) { img.src = foto; img.classList.remove('hidden'); ini.classList.add('hidden'); }
+            else { ini.innerText = nome.charAt(0).toUpperCase(); ini.classList.remove('hidden'); img.classList.add('hidden'); }
+            const itens = (loja.itens || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+            lojaPublicaItens = itens;
+            if (!itens.length) { lista.innerHTML = "<p style='grid-column:1/-1; text-align:center; font-size:13px; opacity:0.7;'>Esta loja ainda não tem produtos.</p>"; return; }
+            lista.innerHTML = '';
+            itens.forEach((prod) => {
+                const im = urlSegura(prod.imagem);
+                const link = linkPermitido(prod.link) ? urlSegura(prod.link) : '';
+                lista.innerHTML += `
+                    <div style="background: var(--input-bg); border-radius:10px; border:1px solid var(--border-color); overflow:hidden; font-size:12px; display:flex; flex-direction:column;">
+                        ${im ? `<img src="${esc(im)}" onclick="abrirDetalheProduto('${esc(prod.id)}', true)" style="width:100%; height:150px; object-fit:contain; background:#fff; display:block; cursor:pointer; margin:0; border-radius:0;">` : `<div onclick="abrirDetalheProduto('${esc(prod.id)}', true)" style="height:90px; display:flex; align-items:center; justify-content:center; font-size:34px; background:rgba(0,0,0,0.05); cursor:pointer;">📦</div>`}
+                        <div style="padding:8px; display:flex; flex-direction:column; gap:4px; flex:1;">
+                            <b style="font-size:13px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${esc(prod.titulo || 'Produto')}</b>
+                            ${prod.preco ? `<span style="font-size:14px; font-weight:bold; color: var(--header-bg);">R$ ${esc(fmtPreco(prod.preco))}</span>` : ''}
+                            ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer" style="margin-top:auto; display:block; text-align:center; background:#00a884; color:white; padding:8px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">Ver mais 🔗</a>` : ''}
+                        </div>
+                    </div>`;
+            });
+        } catch (e) {
+            lista.innerHTML = "<p style='grid-column:1/-1; text-align:center; font-size:13px; color:red;'>Não foi possível carregar a loja.</p>";
+        }
+    }
+
+    window.fecharLojaPublica = () => { document.getElementById('loja-publica').classList.add('hidden'); };
+
+    // Foto do catálogo -> tela do produto com "Falar com o vendedor" e "Voltar para o catálogo"
+    window.abrirDetalheProduto = (id, publica = false) => {
+        const lista = publica ? lojaPublicaItens : cacheProdutosVitrine;
+        const prod = lista.find((p) => p.id === id);
+        if (!prod) return;
+        const origem = publica ? 'publica' : (lojaCtx.modo === 'ver' && noChat() ? 'chat' : 'ver');
+        detalheProduto = { prod, origem };
+        const im = urlSegura(prod.imagem, true);
+        const img = document.getElementById('mp-img'), sem = document.getElementById('mp-sem-img');
+        if (im) { img.src = im; img.style.display = 'block'; sem.style.display = 'none'; }
+        else { img.style.display = 'none'; sem.style.display = 'block'; }
+        document.getElementById('mp-titulo').innerText = prod.titulo || 'Produto';
+        document.getElementById('mp-preco').innerText = prod.preco ? 'R$ ' + fmtPreco(prod.preco) : '';
+        const meuProprio = origem === 'publica' && usuarioAtual && lojaPublica && lojaPublica.uid === usuarioAtual.uid;
+        document.getElementById('mp-btn-falar').style.display = ((origem === 'chat' || origem === 'publica') && !meuProprio) ? 'block' : 'none';
+        document.getElementById('modal-produto').style.display = 'flex';
+    };
+
+    window.fecharDetalheProduto = () => { document.getElementById('modal-produto').style.display = 'none'; };
+
+    // Manda o cartão do produto (com o botão Comprar) para o chat com o vendedor
+    async function enviarInteresseProduto(prod) {
+        if (!contatoSelecionado || !usuarioAtual || !prod) return;
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        const preco = prod.preco ? ' — R$ ' + fmtPreco(prod.preco) : '';
+        await addDoc(collection(db, "conversas", idSala, "mensagens"), {
+            texto: `Olá! Tenho interesse neste produto: ${String(prod.titulo || 'produto').slice(0, 100)}${preco}`,
+            imagemUrlProduto: urlSegura(prod.imagem, true) ? String(prod.imagem).slice(0, 500) : '',
+            linkAfiliado: linkPermitido(prod.link) ? String(prod.link).slice(0, 500) : '',
+            remetente: usuarioAtual.email,
+            tipo: 'produto',
+            criadoEm: serverTimestamp()
+        });
+    }
+
+    window.falarSobreProduto = async () => {
+        const d = detalheProduto;
+        if (!d) return;
+        try {
+            if (d.origem === 'chat') {
+                await enviarInteresseProduto(d.prod);
+                window.fecharDetalheProduto();
+                window.fecharVitrineAfiliado();
+                return;
+            }
+            if (!usuarioAtual) { // visitante sem conta: guarda o produto e o vendedor para depois do login
+                localStorage.setItem('zl_convite_slug', lojaPublica.slug);
+                localStorage.setItem('zl_produto_pendente', JSON.stringify({ titulo: d.prod.titulo || '', preco: d.prod.preco || '', imagem: d.prod.imagem || '', link: d.prod.link || '' }));
+                window.fecharDetalheProduto();
+                window.fecharLojaPublica();
+                const av = document.getElementById('aviso-convite');
+                av.textContent = '💬 Entre ou abra uma conta para falar com ' + lojaPublica.n + ' sobre este produto';
+                av.classList.remove('hidden');
+                return;
+            }
+            window.fecharDetalheProduto();
+            await conectarComVendedor(lojaPublica, d.prod);
+        } catch (e) { alert('Erro ao falar com o vendedor: ' + e.message); }
+    };
+
+    async function conectarComVendedor(p, prod) {
+        if (p.uid === usuarioAtual.uid) return alert('Esta é a sua loja.');
+        const nome = p.n || 'Vendedor';
+        await setDoc(doc(db, "agenda", usuarioAtual.uid), { c: { [p.uid]: { n: nome, f: p.f || '', l: '', t: Date.now() } } }, { merge: true });
+        await apresentarAoContato(p.uid);
+        window.fecharLojaPublica();
+        window.abrirChat(p.uid, nome, p.f || '');
+        if (prod) await enviarInteresseProduto(prod);
+    }
+
+    window.falarComVendedor = async () => {
+        if (!lojaPublica) return;
+        if (!usuarioAtual) {
+            localStorage.setItem('zl_convite_slug', lojaPublica.slug);
+            localStorage.removeItem('zl_produto_pendente');
+            window.fecharLojaPublica();
+            const av = document.getElementById('aviso-convite');
+            av.textContent = '💬 Entre ou abra uma conta para falar com ' + lojaPublica.n;
+            av.classList.remove('hidden');
+            return;
+        }
+        try { await conectarComVendedor(lojaPublica); } catch (e) { alert('Erro ao conectar: ' + e.message); }
+    };
+
+    async function processarConviteSlug() {
+        const sl = localStorage.getItem('zl_convite_slug');
+        if (!sl || !usuarioAtual) return;
+        localStorage.removeItem('zl_convite_slug');
+        try {
+            const sp = await getDoc(doc(db, "slugs", sl));
+            if (!sp.exists()) return;
+            const p = sp.data();
+            let prod = null;
+            try { prod = JSON.parse(localStorage.getItem('zl_produto_pendente') || 'null'); } catch (_) {}
+            localStorage.removeItem('zl_produto_pendente');
+            await conectarComVendedor({ uid: p.uid, n: p.n, f: p.f, slug: sl }, prod);
+        } catch (e) { alert('Erro ao abrir a loja: ' + e.message); }
+    }
+
+    let audioCtx = null;
+    let ringInterval = null;
+    let cacheProdutosVitrine = [];
+    let meuNomeAtual = "";
+    
+    const EMAIL_ADMIN = "afiliado9591@gmail.com"; 
+
+    // Instalação PWA
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        atualizarVisibilidadeBotaoInstalacao();
+    });
+
+    function verificarSeEstaInstalado() {
+        return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function atualizarVisibilidadeBotaoInstalacao() {
+        const btnPush = document.getElementById('btn-ativar-push');
+        if (btnPush) {
+            if ('Notification' in window && Notification.permission !== 'granted') btnPush.classList.remove('hidden');
+            else btnPush.classList.add('hidden');
+        }
+        const btnInstalar = document.getElementById('btn-instalar-no-perfil');
+        if (!btnInstalar) return;
+        if (!verificarSeEstaInstalado()) {
+            btnInstalar.classList.remove('hidden');
+        } else {
+            btnInstalar.classList.add('hidden');
+        }
+    }
+
+    window.abrirInstalacaoDoPerfil = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                deferredPrompt = null;
+                document.getElementById('btn-instalar-no-perfil').classList.add('hidden');
+            }
+        } else {
+            const instrucoes = document.getElementById('instrucoes-texto');
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                instrucoes.innerHTML = "Para instalar no seu iPhone/iPad:<br>1. Toque no botão de <b>Partilha</b> (quadrado com seta para cima) no Safari.<br>2. Role para baixo e escolha <b>'Adicionar ao Ecrã Principal'</b>.";
+            } else {
+                instrucoes.innerHTML = "Para instalar no seu dispositivo:<br>1. Toque no menu do navegador (três pontos no canto superior direito).<br>2. Selecione <b>'Instalar aplicativo'</b> ou <b>'Adicionar à tela inicial'</b>.";
+            }
+            document.getElementById('modal-instalar').style.display = 'flex';
+        }
+    };
+
+    window.fecharInstalacao = () => {
+        document.getElementById('modal-instalar').style.display = 'none';
+    };
+
+    // Push de chamadas (app fechado)
+    const VAPID_KEY = 'BCawnk4OcT7_geAcyKsPZb8EKiYzIsFoFWvdu4qnjwIXdS1f9eEkOxSAscZFCpfIbBXdiS0-WrB3bfmUQ00_L1M';
+
+    async function obterTokenPush() {
+        let reg = await navigator.serviceWorker.register('sw.js');
+        await navigator.serviceWorker.ready;
+        const pedir = (r) => getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: r });
+        try { return await pedir(reg); }
+        catch (e) {
+            // limpa inscrição antiga e tenta mais uma vez
+            try { const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); await reg.unregister(); } catch (_) {}
+            reg = await navigator.serviceWorker.register('sw.js');
+            await navigator.serviceWorker.ready;
+            return await pedir(reg);
+        }
+    }
+
+    async function registrarPush() {
+        if (!usuarioAtual || !('serviceWorker' in navigator) || !('Notification' in window)) return false;
+        const token = await obterTokenPush();
+        // só grava no Firestore se o token mudou (economiza escritas)
+        if (token && localStorage.getItem('zapleve_fcm_' + usuarioAtual.uid) !== token) {
+            await updateDoc(doc(db, "usuarios", usuarioAtual.uid), { fcmToken: token });
+            localStorage.setItem('zapleve_fcm_' + usuarioAtual.uid, token);
+        }
+        return !!token;
+    }
+
+    window.ativarNotificacoes = async () => {
+        try {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') return alert('Permissão negada. Ative as notificações deste site nas configurações do navegador.');
+            await registrarPush();
+            alert('Avisos de chamada ativados!');
+            atualizarVisibilidadeBotaoInstalacao();
+        } catch (e) { alert('Erro ao ativar avisos: ' + e.message); }
+    };
+
+    window.testarAviso = async () => {
+        const rel = [];
+        try {
+            rel.push('Permissão: ' + (('Notification' in window) ? Notification.permission : 'sem suporte'));
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                return alert(rel.join('\n') + '\n\nToque em "Ativar avisos de chamada" primeiro.');
+            }
+            const token = await obterTokenPush();
+            rel.push('Service worker: ok');
+            rel.push('Token: ' + (token ? 'gerado' : 'vazio'));
+            await updateDoc(doc(db, "usuarios", usuarioAtual.uid), { fcmToken: token });
+            localStorage.setItem('zapleve_fcm_' + usuarioAtual.uid, token);
+            rel.push('Salvo no Firestore: sim');
+            const idToken = await auth.currentUser.getIdToken();
+            const r = await fetch(`${R2_WORKER}/notificar`, { method: 'POST', headers: { Authorization: 'Bearer ' + idToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ token, nome: 'Teste', video: false, teste: true }) });
+            rel.push('Worker: ' + r.status + ' ' + (await r.text()).slice(0, 200));
+        } catch (e) { rel.push('ERRO: ' + e.message); }
+        alert(rel.join('\n'));
+    };
+
+    function registrarPushSePermitido() {
+        if ('Notification' in window && Notification.permission === 'granted') registrarPush().catch(() => {});
+    }
+
+    async function enviarPushChamada(comVideo) {
+        try {
+            const c = contatosCache[contatoSelecionado.uid];
+            const tk = c && c.token;
+            if (!tk) { console.log('Contato sem aviso de chamada ativado.'); return; }
+            const idToken = await auth.currentUser.getIdToken();
+            const r = await fetch(`${R2_WORKER}/notificar`, { method: 'POST', headers: { Authorization: 'Bearer ' + idToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tk, nome: meuNomeAtual, video: !!comVideo }) });
+            if (!r.ok) console.warn('Push falhou', r.status, (await r.text()).slice(0, 300));
+        } catch (e) { console.warn('Erro no push:', e.message); }
+    }
+
+    // Zoom de Imagem
+    window.ampliarImagem = (src) => {
+        document.getElementById('imagem-zoom-src').src = src;
+        document.getElementById('modal-zoom-imagem').style.display = 'flex';
+    };
+
+    window.fecharZoomImagem = () => {
+        document.getElementById('modal-zoom-imagem').style.display = 'none';
+    };
+
+    window.toggleMenuAnexos = (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('menu-anexos');
+        menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+    };
+
+    window.fecharMenuAnexos = () => {
+        document.getElementById('menu-anexos').style.display = 'none';
+    };
+
+    window.addEventListener('click', () => {
+        fecharMenuAnexos();
+    });
+
+    window.abrirMeuPerfil = async () => {
+        if (!usuarioAtual) return;
+        const dados = await obterMeuPerfil();
+        
+        const avatarGrande = document.getElementById('perfil-avatar-grande');
+        const imgGrande = document.getElementById('perfil-img-grande');
+
+        if (dados.fotoUrl) {
+            imgGrande.src = dados.fotoUrl;
+            imgGrande.classList.remove('hidden');
+            avatarGrande.classList.add('hidden');
+        } else {
+            avatarGrande.innerText = (dados.nome || usuarioAtual.email).charAt(0).toUpperCase();
+            avatarGrande.classList.remove('hidden');
+            imgGrande.classList.add('hidden');
+        }
+
+        const nomeDoUser = dados.nome || usuarioAtual.email.split('@')[0];
+        document.getElementById('perfil-nome-exibicao').innerText = nomeDoUser;
+        document.getElementById('perfil-email-exibicao').innerText = usuarioAtual.email;
+        document.getElementById('input-meu-nome').value = nomeDoUser;
+        
+        // Verificar se perfil está incompleto para mostrar aviso vermelho na Bio
+        const alertaBio = document.getElementById('alerta-perfil-bio');
+        if (!dados.nome || dados.nome.trim() === "" || dados.nome.includes("@") || !dados.linkPessoal) {
+            alertaBio.classList.remove('hidden');
+        } else {
+            alertaBio.classList.add('hidden');
+        }
+
+        const linkSalvo = dados.linkPessoal || "";
+        const linkContainer = document.getElementById('perfil-link-container');
+        if (linkSalvo) {
+            linkContainer.innerHTML = '';
+            const aLink = document.createElement('a');
+            aLink.href = urlSegura(linkSalvo.startsWith('http') ? linkSalvo : 'https://' + linkSalvo) || '#';
+            aLink.target = '_blank';
+            aLink.rel = 'noopener noreferrer';
+            aLink.style.cssText = 'color: #0275d8; text-decoration: underline;';
+            aLink.textContent = linkSalvo;
+            linkContainer.appendChild(aLink);
+        } else {
+            linkContainer.innerText = "Nenhum link ou vídeo configurado.";
+        }
+
+        document.getElementById('input-meu-link').value = linkSalvo;
+        document.getElementById('input-foto-perfil').value = "";
+        document.getElementById('meu-painel-edicao-link').classList.remove('hidden');
+        
+        atualizarVisibilidadeBotaoInstalacao();
+        document.getElementById('modal-perfil-usuario').style.display = 'flex';
+    };
+
+    window.abrirPerfilContatoSelecionado = async () => {
+        if (!contatoSelecionado) return;
+        const eC = (lerCache('zl_agenda_' + usuarioAtual.uid, Infinity) || {})[contatoSelecionado.uid] || {};
+        const dados = { fotoUrl: eC.f || '', linkPessoal: eC.l || '', email: '' };
+
+        const avatarGrande = document.getElementById('perfil-avatar-grande');
+        const imgGrande = document.getElementById('perfil-img-grande');
+
+        if (dados.fotoUrl) {
+            imgGrande.src = dados.fotoUrl;
+            imgGrande.classList.remove('hidden');
+            avatarGrande.classList.add('hidden');
+        } else {
+            avatarGrande.innerText = contatoSelecionado.nome.charAt(0).toUpperCase();
+            avatarGrande.classList.remove('hidden');
+            imgGrande.classList.add('hidden');
+        }
+
+        document.getElementById('perfil-nome-exibicao').innerText = contatoSelecionado.nome;
+        document.getElementById('perfil-email-exibicao').innerText = dados.email || "Utilizador Zap Leve";
+        document.getElementById('alerta-perfil-bio').classList.add('hidden');
+
+        const linkSalvo = dados.linkPessoal || "";
+        const linkContainer = document.getElementById('perfil-link-container');
+        if (linkSalvo) {
+            linkContainer.innerHTML = '';
+            const aLink = document.createElement('a');
+            aLink.href = urlSegura(linkSalvo.startsWith('http') ? linkSalvo : 'https://' + linkSalvo) || '#';
+            aLink.target = '_blank';
+            aLink.rel = 'noopener noreferrer';
+            aLink.style.cssText = 'color: #0275d8; text-decoration: underline;';
+            aLink.textContent = linkSalvo;
+            linkContainer.appendChild(aLink);
+        } else {
+            linkContainer.innerText = "Este usuário ainda não adicionou nenhum link.";
+        }
+
+        document.getElementById('meu-painel-edicao-link').classList.add('hidden');
+        
+        atualizarVisibilidadeBotaoInstalacao();
+        document.getElementById('modal-perfil-usuario').style.display = 'flex';
+    };
+
+    window.fecharPerfilUsuario = () => {
+        document.getElementById('modal-perfil-usuario').style.display = 'none';
+    };
+
+    window.salvarMeuPerfilCompleto = async () => {
+        if (!usuarioAtual) return;
+        const novoNome = document.getElementById('input-meu-nome').value.trim();
+        const novoLink = document.getElementById('input-meu-link').value.trim();
+        const fileInput = document.getElementById('input-foto-perfil');
+        if (!novoNome) return alert("O nome de usuário não pode estar vazio.");
+        try {
+            const dadosAtualizacao = { nome: novoNome, linkPessoal: novoLink };
+            if (fileInput.files && fileInput.files[0]) {
+                const blob = await comprimirImagem(fileInput.files[0], 256, 0.8);
+                dadosAtualizacao.fotoUrl = await subirParaR2(blob, 'webp');
+            }
+            try { await updateDoc(doc(db, "usuarios", usuarioAtual.uid), dadosAtualizacao); }
+            catch (e1) { await garantirDocUsuario(); await updateDoc(doc(db, "usuarios", usuarioAtual.uid), dadosAtualizacao); }
+            meuNomeAtual = novoNome;
+            document.getElementById('user-display-contacts').innerText = novoNome;
+            if (dadosAtualizacao.fotoUrl) {
+                document.getElementById('meu-img-topo').src = dadosAtualizacao.fotoUrl;
+                document.getElementById('meu-img-topo').classList.remove('hidden');
+                document.getElementById('meu-avatar-topo').classList.add('hidden');
+            }
+            const perfil = { ...(await obterMeuPerfil()), ...dadosAtualizacao };
+            salvarCache('zl_perfil_' + usuarioAtual.uid, perfil);
+            await sincronizarPerfilPublico(perfil);
+            if (perfil.slug) { try { await setDoc(doc(db, "slugs", perfil.slug), { uid: usuarioAtual.uid, n: String(perfil.nome || 'Loja').slice(0, 60), f: /^https?:\/\//i.test(perfil.fotoUrl || '') ? String(perfil.fotoUrl).slice(0, 300) : '' }); } catch (_) {} }
+            alert("Perfil atualizado com sucesso!");
+            fecharPerfilUsuario();
+        } catch (e) {
+            alert("Erro ao atualizar perfil: " + e.message);
+        }
+    };
+
+    // TOQUE DE TELEFONE ALTO E REALISTA
+    const toqueAudio = new Audio('toque.mp3');
+    toqueAudio.loop = true;
+    toqueAudio.preload = 'auto';
+
+    function iniciarSomCampainha(tipo = 'tocar') {
+        toqueAudio.volume = tipo === 'tocar' ? 1 : 0.5;
+        toqueAudio.currentTime = 0;
+        toqueAudio.play().catch(() => {});
+    }
+
+    function pararSomCampainha() {
+        toqueAudio.pause();
+        toqueAudio.currentTime = 0;
+    }
+
+    window.alternarModoEscuro = () => {
+        document.body.classList.toggle('dark-mode');
+        const escuroLigado = document.body.classList.contains('dark-mode');
+        localStorage.setItem('zapleve_dark', escuroLigado ? '1' : '0');
+    };
+    if (localStorage.getItem('zapleve_dark') === '1') {
+        document.body.classList.add('dark-mode');
+    }
+
+    const DOMINIOS_OK = ['shopee.com.br', 'shp.ee', 'mercadolivre.com.br', 'mercadolivre.com', 'mercadolibre.com', 'meli.la', 'amazon.com.br', 'amazon.com', 'amzn.to', 'magazinevoce.com.br', 'magalu.com', 'aliexpress.com', 'shein.com', 'shein.com.br', 'shein.top', 'shope.ee', 'amzn.com', 'a.co'];
+    const linkPermitido = (u) => {
+        try { const h = new URL(u).hostname.toLowerCase(); return /^https?:$/.test(new URL(u).protocol) && DOMINIOS_OK.some((d) => h === d || h.endsWith('.' + d)); }
+        catch (_) { return false; }
+    };
+
+    const EXTRATOR_ML = 'https://extrator-ml-alibr.vercel.app/api/extract-list';
+    const ehLinkML = (u) => {
+        try { const x = new URL(u); const h = x.hostname.toLowerCase(); return x.protocol === 'https:' && (h === 'meli.la' || /(^|\.)mercadolivre\.com(\.br)?$/.test(h)); }
+        catch (_) { return false; }
+    };
+    const fmtPreco = (p) => /^\d+(\.\d+)?$/.test(String(p)) ? Number(p).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(p);
+
+    window.extrairProdutoML = async () => {
+        const link = (document.getElementById('admin-prod-link-ml').value.trim() || document.getElementById('admin-prod-link').value.trim());
+        if (!ehLinkML(link)) return alert('O preenchimento automático só funciona com links do Mercado Livre (mercadolivre.com.br ou meli.la). Para os outros sites, preencha à mão.');
+        const btn = document.getElementById('btn-extrair-ml');
+        const texto = btn.innerText;
+        btn.innerText = '⏳ Buscando dados...'; btn.disabled = true;
+        try {
+            const idToken = await auth.currentUser.getIdToken();
+            const r = await fetch(`${R2_WORKER}/extrair?url=${encodeURIComponent(link)}`, { headers: { Authorization: 'Bearer ' + idToken } });
+            const d = await r.json();
+            const lista = d.products || [];
+            if (!lista.length) return alert(d.error || 'Não consegui ler esse link. Preencha à mão.');
+            if (lista.length > 1) return alert('Esse link é de uma lista de produtos. Cole o link de UM produto.');
+            const p = lista[0];
+            if (p.nome) document.getElementById('admin-prod-titulo').value = String(p.nome).slice(0, 100);
+            if (p.preco) document.getElementById('admin-prod-preco').value = p.preco;
+            if (p.linkImagem) document.getElementById('admin-prod-img').value = p.linkImagem;
+            alert('Dados preenchidos! Confira nome, preço e foto antes de salvar. O seu link de afiliado foi mantido.');
+        } catch (e) { alert('Erro ao buscar os dados: ' + e.message + '\nPreencha à mão.'); }
+        finally { btn.innerText = texto; btn.disabled = false; }
+    };
+
+    async function obterConfig(forcar = false) {
+        let c = forcar ? null : lerCache('zl_config', 30 * 60 * 1000);
+        if (!c) {
+            try {
+                const snap = await getDoc(doc(db, "config", "app"));
+                c = snap.exists() ? snap.data() : {};
+                salvarCache('zl_config', c);
+            } catch (_) { c = lerCache('zl_config', Infinity) || {}; }
+        }
+        return c;
+    }
+
+    // O admin sempre vê o extrator; os usuários só veem se o admin ligar
+    async function aplicarVisibilidadeExtrator() {
+        const bloco = document.getElementById('bloco-extrator');
+        if (!bloco) return;
+        const cfg = await obterConfig();
+        bloco.classList.toggle('hidden', !(ehAdminApp() || cfg.extratorML === true));
+        const chk = document.getElementById('chk-extrator');
+        if (chk) chk.checked = cfg.extratorML === true;
+    }
+
+    window.alternarExtratorML = async (ligado) => {
+        try {
+            await setDoc(doc(db, "config", "app"), { extratorML: !!ligado }, { merge: true });
+            salvarCache('zl_config', { ...(lerCache('zl_config', Infinity) || {}), extratorML: !!ligado });
+            alert(ligado ? 'Extrator do Mercado Livre LIGADO para os usuários (pode levar até 30 min para aparecer para todos).' : 'Extrator do Mercado Livre DESLIGADO para os usuários.');
+        } catch (e) { alert('Erro ao salvar: ' + e.message); }
+    };
+
+    let lojaCtx = { modo: 'admin', titulo: '🛍️ Ofertas do Zap Leve' };
+    const ehAdminApp = () => !!(usuarioAtual && usuarioAtual.email === EMAIL_ADMIN);
+    const noChat = () => !!contatoSelecionado && !document.getElementById('chat-screen').classList.contains('hidden');
+
+    function configurarModalLoja(ctx) {
+        lojaCtx = ctx;
+        document.getElementById('titulo-loja').innerText = ctx.titulo;
+        const admin = ctx.modo === 'admin' && ehAdminApp();
+        document.getElementById('btn-abrir-admin').classList.toggle('hidden', !admin);
+        document.getElementById('painel-admin-geral').classList.toggle('hidden', ctx.modo !== 'minha');
+        document.getElementById('abas-admin').classList.toggle('hidden', ctx.modo === 'minha');
+        document.getElementById('linha-endereco-loja').classList.add('hidden');
+        if (ctx.modo === 'minha') mudarAbaAdmin('produtos');
+        document.getElementById('modal-vitrine').style.display = 'flex';
+        aplicarVisibilidadeExtrator();
+    }
+
+    // Carrinho: no chat abre a loja do contato; fora do chat abre a minha
+    window.abrirVitrineAfiliado = async () => {
+        if (!usuarioAtual) return alert('Entre na sua conta para ver as lojas.');
+        if (noChat()) return abrirLojaDoContato(contatoSelecionado.uid, contatoSelecionado.nome);
+        return window.abrirMinhaLoja();
+    };
+
+    window.fecharVitrineAfiliado = () => {
+        document.getElementById('modal-vitrine').style.display = 'none';
+        document.getElementById('painel-admin-geral').classList.add('hidden');
+    };
+
+    window.togglePainelAdmin = () => {
+        const painel = document.getElementById('painel-admin-geral');
+        painel.classList.toggle('hidden');
+        if (!painel.classList.contains('hidden')) {
+            carregarListaUsuariosAdmin();
+        }
+    };
+
+    window.mudarAbaAdmin = (aba) => {
+        if (aba === 'produtos') {
+            document.getElementById('aba-admin-produtos').classList.remove('hidden');
+            document.getElementById('aba-admin-utilizadores').classList.add('hidden');
+        } else {
+            document.getElementById('aba-admin-produtos').classList.add('hidden');
+            document.getElementById('aba-admin-utilizadores').classList.remove('hidden');
+        }
+    };
+
+    async function migrarProdutosAntigos() {
+        const snap = await getDocs(collection(db, "produtos"));
+        const itens = [];
+        snap.forEach((d) => { const x = d.data(); itens.push({ id: d.id, titulo: x.titulo || '', preco: x.preco || '', imagem: x.imagem || '', link: x.link || '', criadoEm: (x.criadoEm && x.criadoEm.toMillis) ? x.criadoEm.toMillis() : 0 }); });
+        try { await setDoc(doc(db, "vitrine", "produtos"), { itens }); } catch (err) { console.warn('Vitrine:', err.message); }
+        return itens;
+    }
+
+    async function carregarVitrineSegregada(forcar = false) {
+        const container = document.getElementById('lista-produtos-vitrine');
+        container.innerHTML = "<p style='text-align:center; font-size:12px;'>A carregar vitrine...</p>";
+        try {
+            let itens = forcar ? null : lerCache('zl_vitrine', 6 * 3600 * 1000);
+            if (!itens) {
+                const snap = await getDoc(doc(db, "vitrine", "produtos"));
+                if (snap.exists()) itens = snap.data().itens || [];
+                else if (ehAdminApp()) itens = await migrarProdutosAntigos();
+                else itens = [];
+                itens.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+                salvarCache('zl_vitrine', itens);
+            }
+            const perfil = await obterMeuPerfil();
+            const limite = Number(perfil.limiteProdutos) || 10;
+            cacheProdutosVitrine = ehAdminApp() ? itens : itens.slice(0, limite);
+            renderizarProdutosVitrine(cacheProdutosVitrine);
+        } catch (e) {
+            container.innerHTML = "<p style='text-align:center; font-size:12px; color:red;'>Erro ao carregar produtos.</p>";
+        }
+    }
+
+    // Loja de outra pessoa (1 leitura, cache de 1 h). Sem loja: mostra as ofertas do admin.
+    async function abrirLojaDoContato(uid, nome) {
+        configurarModalLoja({ modo: 'ver', titulo: '🏪 Loja de ' + nome });
+        const container = document.getElementById('lista-produtos-vitrine');
+        container.innerHTML = "<p style='text-align:center; font-size:12px;'>A carregar loja...</p>";
+        try {
+            let loja = lerCache('zl_loja_' + uid, 3600 * 1000);
+            if (!loja) {
+                const snap = await getDoc(doc(db, "lojas", uid));
+                loja = snap.exists() ? snap.data() : { vazio: true };
+                salvarCache('zl_loja_' + uid, loja);
+            }
+            if (loja.vazio) {
+                configurarModalLoja({ modo: 'admin', titulo: '🛍️ Ofertas do Zap Leve' });
+                return carregarVitrineSegregada();
+            }
+            cacheProdutosVitrine = (loja.itens || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+            renderizarProdutosVitrine(cacheProdutosVitrine);
+        } catch (e) {
+            container.innerHTML = "<p style='text-align:center; font-size:12px; color:red;'>Erro ao carregar a loja.</p>";
+        }
+    }
+
+    window.abrirMinhaLoja = async () => {
+        if (!usuarioAtual) return;
+        fecharPerfilUsuario();
+        if (ehAdminApp()) { configurarModalLoja({ modo: 'admin', titulo: '🛍️ Minha loja (Ofertas do Zap Leve)' }); return carregarVitrineSegregada(); }
+        configurarModalLoja({ modo: 'minha', titulo: '🏪 Minha loja' });
+        await carregarMinhaLoja(false);
+    };
+
+    async function carregarMinhaLoja(forcar = false) {
+        const container = document.getElementById('lista-produtos-vitrine');
+        container.innerHTML = "<p style='text-align:center; font-size:12px;'>A carregar...</p>";
+        try {
+            let loja = forcar ? null : lerCache('zl_loja_' + usuarioAtual.uid, 6 * 3600 * 1000);
+            if (!loja) {
+                const snap = await getDoc(doc(db, "lojas", usuarioAtual.uid));
+                loja = snap.exists() ? snap.data() : { vazio: true };
+                salvarCache('zl_loja_' + usuarioAtual.uid, loja);
+            }
+            if (loja.vazio) {
+                document.getElementById('painel-admin-geral').classList.add('hidden');
+                container.innerHTML = `<div class="col-total" style="text-align:center; padding:12px;"><p style="font-size:13px; line-height:1.4;">Você ainda não tem loja.<br>Crie a sua para os seus contatos verem seus produtos. Enquanto você não criar, eles veem as ofertas do Zap Leve.</p><button class="btn-alt" onclick="criarMinhaLoja()">🏪 Criar minha loja</button></div>`;
+                return;
+            }
+            cacheProdutosVitrine = (loja.itens || []).slice().sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+            renderizarProdutosVitrine(cacheProdutosVitrine);
+            document.getElementById('titulo-loja').innerText = '🏪 ' + (loja.nome || 'Minha loja');
+            mostrarEnderecoLoja((await obterMeuPerfil()).slug);
+        } catch (e) {
+            container.innerHTML = "<p style='text-align:center; font-size:12px; color:red;'>Erro ao carregar sua loja.</p>";
+        }
+    }
+
+    // Reserva o endereço zapleve.alibr.com.br/<nome> (único: as regras do Firebase impedem repetir)
+    async function reservarEndereco(bruto, p, antigo) {
+        const slug = limparSlug(bruto);
+        if (!/^[a-z0-9-]{3,30}$/.test(slug) || RESERVADOS.includes(slug)) { alert('Nome inválido. Use de 3 a 30 letras minúsculas, números ou hífen.'); return ''; }
+        if (slug === antigo) return slug;
+        try {
+            await setDoc(doc(db, "slugs", slug), { uid: usuarioAtual.uid, n: String(p.nome || 'Loja').slice(0, 60), f: /^https?:\/\//i.test(p.fotoUrl || '') ? String(p.fotoUrl).slice(0, 300) : '' });
+        } catch (e) { console.warn('Endereço:', e.message); alert('Esse nome já está em uso (ou as regras ainda não foram publicadas). Tente outro.'); return ''; }
+        if (antigo) { try { await deleteDoc(doc(db, "slugs", antigo)); } catch (_) {} }
+        await updateDoc(doc(db, "usuarios", usuarioAtual.uid), { slug });
+        salvarCache('zl_perfil_' + usuarioAtual.uid, { ...p, slug });
+        return slug;
+    }
+
+    function mostrarEnderecoLoja(slug) {
+        const el = document.getElementById('linha-endereco-loja');
+        el.classList.remove('hidden');
+        const b = 'width:auto; padding:5px 9px; margin:0; font-size:11px;';
+        el.innerHTML = (slug
+            ? `🔗 <b>${esc(location.host)}/${esc(slug)}</b> <button class="btn-alt" style="${b}" onclick="copiarEnderecoLoja()">Copiar</button> <button class="btn-alt" style="${b} background:#d4a24c;" onclick="definirEnderecoLoja()">Alterar endereço</button>`
+            : `<button class="btn-alt" style="${b} background:#d4a24c;" onclick="definirEnderecoLoja()">🔗 Definir o endereço da minha loja</button>`)
+            + ` <button class="btn-alt" style="${b} background:#6c4ab6;" onclick="editarNomeLoja()">✏️ Nome da loja</button>`;
+    }
+
+    window.copiarEnderecoLoja = async () => {
+        const p = await obterMeuPerfil();
+        const url = location.origin + '/' + p.slug;
+        try { await navigator.clipboard.writeText(url); alert('Endereço da loja copiado!\n' + url); } catch (_) { prompt('Copie o endereço:', url); }
+    };
+
+    window.editarNomeLoja = async () => {
+        try {
+            const p = await obterMeuPerfil();
+            const lojaCache = lerCache('zl_loja_' + usuarioAtual.uid, Infinity) || {};
+            const novo = prompt('Nome da sua loja (aparece na página da loja):', lojaCache.nome || p.nome || '');
+            if (novo === null) return;
+            const nome = novo.trim().slice(0, 60);
+            if (nome.length < 2) return alert('Digite um nome com pelo menos 2 letras.');
+            await updateDoc(doc(db, "lojas", usuarioAtual.uid), { nome });
+            if (p.slug) await setDoc(doc(db, "slugs", p.slug), { uid: usuarioAtual.uid, n: nome, f: /^https?:\/\//i.test(p.fotoUrl || '') ? String(p.fotoUrl).slice(0, 300) : '' });
+            localStorage.removeItem('zl_loja_' + usuarioAtual.uid);
+            await carregarMinhaLoja(true);
+            alert('Nome da loja atualizado!');
+        } catch (e) { alert('Erro ao editar o nome: ' + e.message); }
+    };
+
+    window.definirEnderecoLoja = async () => {
+        try {
+            const p = await obterMeuPerfil();
+            const bruto = prompt('Escolha o endereço da sua loja (letras, números e hífen).\nEx.: modaflor  →  ' + location.host + '/modaflor', p.slug || '');
+            if (bruto === null) return;
+            const slug = await reservarEndereco(bruto, p, p.slug || '');
+            if (!slug) return;
+            await updateDoc(doc(db, "lojas", usuarioAtual.uid), { slug });
+            localStorage.removeItem('zl_loja_' + usuarioAtual.uid);
+            await carregarMinhaLoja(true);
+        } catch (e) { alert('Erro ao definir o endereço: ' + e.message); }
+    };
+
+    window.criarMinhaLoja = async () => {
+        try {
+            const p = await obterMeuPerfil();
+            const bruto = prompt('Escolha o endereço da sua loja (letras, números e hífen).\nEx.: modaflor  →  ' + location.host + '/modaflor');
+            if (bruto === null) return;
+            const slug = await reservarEndereco(bruto, p, '');
+            if (!slug) return;
+            await setDoc(doc(db, "lojas", usuarioAtual.uid), { nome: String(p.nome || 'Minha loja').slice(0, 60), itens: [], criadoEm: Date.now(), slug });
+            localStorage.removeItem('zl_loja_' + usuarioAtual.uid);
+            configurarModalLoja({ modo: 'minha', titulo: '🏪 Minha loja' });
+            await carregarMinhaLoja(true);
+        } catch (e) { alert('Erro ao criar a loja: ' + e.message); }
+    };
+
+    const docLojaAtual = () => lojaCtx.modo === 'minha' ? doc(db, "lojas", usuarioAtual.uid) : doc(db, "vitrine", "produtos");
+    async function recarregarLojaAtual() {
+        if (lojaCtx.modo === 'minha') { localStorage.removeItem('zl_loja_' + usuarioAtual.uid); await carregarMinhaLoja(true); }
+        else await carregarVitrineSegregada(true);
+    }
+
+    let salvandoProduto = false;
+
+    // Atualiza a lista guardada no celular sem ler o Firebase de novo
+    function atualizarCachesLoja(fn) {
+        const chave = lojaCtx.modo === 'minha' ? 'zl_loja_' + usuarioAtual.uid : 'zl_vitrine';
+        const c = lerCache(chave, Infinity);
+        if (!c) return;
+        if (Array.isArray(c)) salvarCache(chave, fn(c));
+        else if (c.itens) salvarCache(chave, { ...c, itens: fn(c.itens) });
+    }
+
+    window.salvarProdutoFirebase = async () => {
+        if (salvandoProduto) return;
+        const titulo = document.getElementById('admin-prod-titulo').value.trim();
+        const preco = document.getElementById('admin-prod-preco').value.trim();
+        let imagem = document.getElementById('admin-prod-img').value.trim();
+        const link = document.getElementById('admin-prod-link').value.trim();
+        const fotoInput = document.getElementById('admin-prod-foto');
+        if (!titulo) return alert("Digite o nome do produto.");
+        if (lojaCtx.modo === 'minha') {
+            if (!link) return alert("Cole o link de afiliado do produto.");
+            if (!linkPermitido(link)) return alert("Use um link de Shopee, Mercado Livre, Amazon, Shein, Magalu ou AliExpress (começando com https://).");
+        }
+        const repetido = cacheProdutosVitrine.some((p) => (link && p.link === link) || String(p.titulo || '').toLowerCase() === titulo.toLowerCase());
+        if (repetido && !confirm('Já existe um produto com esse nome ou link na lista. Cadastrar mesmo assim?')) return;
+        const btn = document.querySelector('button[onclick="salvarProdutoFirebase()"]');
+        salvandoProduto = true;
+        if (btn) { btn.disabled = true; btn.dataset.t = btn.innerText; btn.innerText = '⏳ Salvando...'; }
+        try {
+            if (fotoInput.files && fotoInput.files[0]) {
+                imagem = await subirParaR2(await comprimirImagem(fotoInput.files[0], 800, 0.8), 'webp');
+            }
+            if (lojaCtx.modo === 'minha') {
+                const p = await obterMeuPerfil();
+                const limite = Number(p.limiteProdutos) || 10;
+                if (cacheProdutosVitrine.length >= limite) return alert(`Sua loja já tem o máximo de ${limite} produtos.`);
+            }
+            const item = { id: crypto.randomUUID().replace(/-/g, '').slice(0, 12), titulo: titulo.slice(0, 100), preco: preco.slice(0, 20), imagem: imagem.slice(0, 500), link: link.slice(0, 500), criadoEm: Date.now() };
+            await setDoc(docLojaAtual(), { itens: arrayUnion(item) }, { merge: true });
+            cacheProdutosVitrine.unshift(item);
+            atualizarCachesLoja((l) => [item, ...l]);
+            renderizarProdutosVitrine(cacheProdutosVitrine);
+            ['admin-prod-titulo', 'admin-prod-preco', 'admin-prod-img', 'admin-prod-link', 'admin-prod-link-ml', 'admin-prod-foto'].forEach((id) => { document.getElementById(id).value = ''; });
+            alert("Produto cadastrado com sucesso!");
+        } catch (e) {
+            alert("Erro ao salvar: " + e.message);
+        } finally {
+            salvandoProduto = false;
+            if (btn) { btn.disabled = false; btn.innerText = btn.dataset.t || '➕ Salvar Produto'; }
+        }
+    };
+
+    window.apagarProdutoFirebase = async (idProduto) => {
+        const item = cacheProdutosVitrine.find((p) => p.id === idProduto);
+        if (!item) return;
+        if (!confirm('Apagar "' + (item.titulo || 'este produto') + '"?')) return;
+        try {
+            await updateDoc(docLojaAtual(), { itens: arrayRemove(item) });
+            cacheProdutosVitrine = cacheProdutosVitrine.filter((p) => p.id !== idProduto);
+            atualizarCachesLoja((l) => l.filter((p) => p.id !== idProduto));
+            renderizarProdutosVitrine(cacheProdutosVitrine);
+        } catch (e) {
+            alert("Erro ao apagar: " + e.message);
+        }
+    };
+
+    async function carregarListaUsuariosAdmin() {
+        const div = document.getElementById('lista-usuarios-admin');
+        div.innerHTML = "<p style='font-size:11px; text-align:center;'>A carregar...</p>";
+        try {
+            const snapshot = await getDocs(query(collection(db, "usuarios"), limit(50)));
+            div.innerHTML = "";
+            snapshot.forEach((docItem) => {
+                const u = docItem.data();
+                const limiteAtual = u.limiteProdutos || 10;
+                div.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background: var(--bg-app); padding:4px 6px; border-radius:4px; font-size:11px;">
+                        <span><b>${esc(u.nome || u.email)}</b></span>
+                        <select onchange="atualizarLimiteUsuario('${esc(docItem.id)}', this.value)" style="width:auto; padding:2px; font-size:11px; margin:0;">
+                            <option value="10" ${limiteAtual == 10 ? 'selected' : ''}>10 itens</option>
+                            <option value="25" ${limiteAtual == 25 ? 'selected' : ''}>25 itens</option>
+                            <option value="50" ${limiteAtual == 50 ? 'selected' : ''}>50 itens</option>
+                            <option value="100" ${limiteAtual == 100 ? 'selected' : ''}>100 itens</option>
+                        </select>
+                    </div>`;
+            });
+        } catch (e) {
+            div.innerHTML = "<p style='font-size:11px; color:red;'>Erro ao carregar utilizadores.</p>";
+        }
+    }
+
+    window.atualizarLimiteUsuario = async (uidUser, novoLimite) => {
+        try {
+            await updateDoc(doc(db, "usuarios", uidUser), { limiteProdutos: Number(novoLimite) });
+            alert("Limite atualizado com sucesso!");
+        } catch (e) {
+            alert("Erro ao atualizar limite: " + e.message);
+        }
+    };
+
+    function renderizarProdutosVitrine(lista) {
+        const container = document.getElementById('lista-produtos-vitrine');
+        container.innerHTML = "";
+        const modo = lojaCtx.modo;
+        const dono = modo === 'minha' || (modo === 'admin' && ehAdminApp());
+        const enviar = noChat() && (modo === 'minha' || modo === 'admin');
+        const ver = modo === 'ver' || (modo === 'admin' && !ehAdminApp());
+        if (lista.length === 0) {
+            container.innerHTML = "<p style='text-align:center; font-size:12px; opacity:0.6;'>Nenhum produto disponível.</p>";
+            return;
+        }
+        if (dono) container.innerHTML = `<p style='font-size:11px; opacity:0.8; margin:0; text-align:center;'>🗑️ Para excluir um produto, toque em <b>Apagar</b> no cartão dele.</p>`;
+        lista.forEach((prod) => {
+            const img = urlSegura(prod.imagem);
+            const link = modo === 'admin' ? urlSegura(prod.link) : (linkPermitido(prod.link) ? urlSegura(prod.link) : '');
+            const btn = 'display:block; text-align:center; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; margin:0; text-decoration:none;';
+            container.innerHTML += `
+                <div style="background: var(--input-bg); border-radius:10px; border: 1px solid var(--border-color); overflow:hidden; font-size:12px; display:flex; flex-direction:column; flex-shrink:0;">
+                    ${img
+                        ? `<img src="${esc(img)}" onclick="abrirDetalheProduto('${esc(prod.id)}')" title="Toque para ver o produto" style="width:100%; height:150px; object-fit:contain; background:#fff; display:block; cursor:pointer; margin:0; border-radius:0;">`
+                        : `<div onclick="abrirDetalheProduto('${esc(prod.id)}')" style="height:90px; display:flex; align-items:center; justify-content:center; font-size:34px; background:rgba(0,0,0,0.05); cursor:pointer;">📦</div>`}
+                    <div style="padding:8px; display:flex; flex-direction:column; gap:4px; flex:1;">
+                        <b style="font-size:13px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${esc(prod.titulo || 'Produto')}</b>
+                        ${prod.preco ? `<span style="font-size:14px; font-weight:bold; color: var(--header-bg);">R$ ${esc(fmtPreco(prod.preco))}</span>` : ''}
+                        <div style="display:flex; flex-direction:column; gap:4px; margin-top:auto;">
+                            ${ver && link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer" style="${btn} background:#00a884; color:white;">Ver mais 🔗</a>` : ''}
+                            ${enviar ? `<button class="btn-alt" style="${btn} width:100%;" onclick="enviarProdutoPorId('${esc(prod.id)}')">Enviar 🛒</button>` : ''}
+                            ${dono ? `<button class="btn-danger" style="${btn} width:100%;" onclick="apagarProdutoFirebase('${esc(prod.id)}')">🗑️ Apagar</button>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    window.enviarProdutoPorId = (id) => {
+        const p = cacheProdutosVitrine.find((x) => x.id === id);
+        if (!p) return;
+        window.enviarProdutoVitrine(encodeURIComponent(p.titulo || ''), urlSegura(p.imagem), urlSegura(p.link));
+    };
+
+    window.filtrarProdutosLocais = () => {
+        const termo = document.getElementById('filtro-vitrine').value.toLowerCase();
+        const filtrados = cacheProdutosVitrine.filter(p => (p.titulo || '').toLowerCase().includes(termo));
+        renderizarProdutosVitrine(filtrados);
+    };
+
+    window.enviarProdutoVitrine = async (tituloEnc, imagem, link) => {
+        const titulo = decodeURIComponent(tituloEnc);
+        if (!contatoSelecionado) return alert("Abra uma conversa primeiro!");
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        await addDoc(collection(db, "conversas", idSala, "mensagens"), {
+            texto: `Oferta imperdível: ${titulo}`,
+            imagemUrlProduto: imagem,
+            linkAfiliado: link,
+            remetente: usuarioAtual.email,
+            tipo: "produto",
+            criadoEm: serverTimestamp()
+        });
+        alert("Produto enviado para o chat!");
+        fecharVitrineAfiliado();
+    };
+
+    let atalhosRapidos = JSON.parse(localStorage.getItem('zapleve_atalhos')) || [
+        { titulo: "👋 Olá", texto: "Olá! Tudo bem?", imagem: "", link: "" }
+    ];
+
+    window.atualizarBarraAtalhos = () => {
+        const barra = document.getElementById('barra-atalhos-rapidos');
+        let html = `<button class="btn-config-quick" onclick="abrirModalQuick()" title="Gerir Atalhos">⚙️</button>`;
+        atalhosRapidos.forEach((item, index) => {
+            html += `<button class="quick-chip" onclick="usarAtalhosRapidos(${index})">${esc(item.titulo)}</button>`;
+        });
+        barra.innerHTML = html;
+    };
+
+    window.abrirModalQuick = () => {
+        renderizarListaConfigQuick();
+        document.getElementById('modal-quick-config').style.display = 'flex';
+    };
+
+    window.fecharModalQuick = () => {
+        document.getElementById('modal-quick-config').style.display = 'none';
+        atualizarBarraAtalhos();
+    };
+
+    window.renderizarListaConfigQuick = () => {
+        const div = document.getElementById('lista-qr-config');
+        div.innerHTML = "";
+        atalhosRapidos.forEach((item, index) => {
+            div.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background: var(--input-bg); padding:6px; border-radius:4px; font-size:12px;">
+                    <div><b>${esc(item.titulo)}</b></div>
+                    <button class="btn-danger" style="width:auto; padding:2px 6px; font-size:10px;" onclick="apagarAtalho(${index})">Apagar</button>
+                </div>`;
+        });
+    };
+
+    window.salvarNovaRespostaRapida = () => {
+        const titulo = document.getElementById('qr-titulo').value.trim();
+        const texto = document.getElementById('qr-texto').value.trim();
+        const imagem = document.getElementById('qr-img').value.trim();
+        const link = document.getElementById('qr-link').value.trim();
+        if (!titulo || !texto) return alert("Preencha Título e Mensagem.");
+        atalhosRapidos.push({ titulo, texto, imagem, link });
+        localStorage.setItem('zapleve_atalhos', JSON.stringify(atalhosRapidos));
+        document.getElementById('qr-titulo').value = '';
+        document.getElementById('qr-texto').value = '';
+        document.getElementById('qr-img').value = '';
+        document.getElementById('qr-link').value = '';
+        renderizarListaConfigQuick();
+        atualizarBarraAtalhos();
+        alert("Atalho salvo!");
+    };
+
+    window.apagarAtalho = (index) => {
+        atalhosRapidos.splice(index, 1);
+        localStorage.setItem('zapleve_atalhos', JSON.stringify(atalhosRapidos));
+        renderizarListaConfigQuick();
+        atualizarBarraAtalhos();
+    };
+
+    window.usarAtalhosRapidos = async (index) => {
+        const item = atalhosRapidos[index];
+        if (!contatoSelecionado) return;
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        await addDoc(collection(db, "conversas", idSala, "mensagens"), {
+            texto: item.texto,
+            imagemUrlProduto: item.imagem || "",
+            linkAfiliado: item.link || "",
+            remetente: usuarioAtual.email,
+            tipo: item.imagem || item.link ? "produto" : "texto",
+            criadoEm: serverTimestamp()
+        });
+    };
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDzi_rystX7ymNbkeifTiO-YOxx2A9UCjI",
+        authDomain: "zapleve.firebaseapp.com",
+        projectId: "zapleve",
+        storageBucket: "zapleve.firebasestorage.app",
+        messagingSenderId: "426242600158",
+        appId: "1:426242600158:web:c2427064b5702948fc264f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let usuarioAtual = null;
+    let contatoSelecionado = null;
+    let unsubscribeChat = null;
+    let unsubChamadasEntrantes = null;
+    let limiteMsgs = 30;
+    let vitrineCacheTs = 0;
+    let limiteUsuarioCache = null;
+
+    let peerConnection = null;
+    let localStream = null;
+    let unsubscribeCall = null;
+    let unsubCandidatos = null;
+    const candidatosMeus = [];
+    const nomeSub = (p, n) => n ? p + '_' + n : (p === 'o' ? 'offerCandidates' : 'answerCandidates');
+    const serversConfig = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
+
+    window.iniciarChamada = async (comVideo) => {
+        if (!contatoSelecionado) return;
+        
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("O seu navegador ou dispositivo não suporta chamadas de áudio/vídeo P2P (certifique-se de usar HTTPS).");
+            return;
+        }
+
+        document.getElementById('call-screen').classList.remove('hidden');
+        document.getElementById('call-status').innerText = `A ligar para ${contatoSelecionado.nome}...`;
+        document.getElementById('call-active-name').innerText = contatoSelecionado.nome;
+        document.getElementById('call-active-avatar').innerText = contatoSelecionado.nome.charAt(0).toUpperCase();
+        document.getElementById('call-placeholder-info').style.display = 'flex';
+        iniciarSomCampainha('chamando');
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: comVideo });
+            document.getElementById('local-video').srcObject = localStream;
+
+            peerConnection = new RTCPeerConnection(serversConfig);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.ontrack = (event) => {
+                pararSomCampainha();
+                document.getElementById('call-placeholder-info').style.display = 'none';
+                document.getElementById('remote-video').srcObject = event.streams[0];
+            };
+
+            const idChamada = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+            const callDoc = doc(db, "chamadas", idChamada);
+            const nonce = Date.now().toString(36);
+            const offerCandidates = collection(callDoc, nomeSub('o', nonce));
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    addDoc(offerCandidates, event.candidate.toJSON()).then((r) => candidatosMeus.push(r)).catch(() => {});
                 }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            await setDoc(callDoc, {
+                oferta: { type: offer.type, sdp: offer.sdp },
+                remetente: usuarioAtual.email,
+                remetenteNome: meuNomeAtual || usuarioAtual.email.split('@')[0],
+                destinatario: contatoSelecionado.uid,
+                comVideo: comVideo,
+                n: nonce,
+                ts: Date.now(),
+                status: 'pendente'
+            });
+
+            enviarPushChamada(comVideo);
+            escutarRespostaChamada(callDoc, nonce);
+        } catch (err) {
+            pararSomCampainha();
+            alert("Erro ao aceder à câmara/microfone. Verifique as permissões do navegador: " + err.message);
+            fecharTelaChamadaUI();
+        }
+    };
+
+    function escutarRespostaChamada(callDoc, nonce) {
+        unsubscribeCall = onSnapshot(callDoc, async (snapshot) => {
+            const data = snapshot.data();
+            if (!data) {
+                // Se o documento da chamada sumiu (foi desligada pelo outro lado), fecha aqui também
+                fecharTelaChamadaUI();
+                return;
+            }
+
+            if (data.resposta && peerConnection && !peerConnection.currentRemoteDescription) {
+                pararSomCampainha();
+                const answer = new RTCSessionDescription(data.resposta);
+                await peerConnection.setRemoteDescription(answer);
+                document.getElementById('call-status').innerText = "Em chamada";
+                document.getElementById('call-placeholder-info').style.display = 'none';
+            }
+        });
+
+        unsubCandidatos = onSnapshot(collection(callDoc, nomeSub('a', nonce)), (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added' && peerConnection) {
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    peerConnection.addIceCandidate(candidate).catch(() => {});
+                }
+            });
+        });
+    }
+
+    function escutarChamadasEntrantes(uidUsuario) {
+        const q = query(collection(db, "chamadas"), where("destinatario", "==", uidUsuario));
+        if (unsubChamadasEntrantes) unsubChamadasEntrantes();
+        unsubChamadasEntrantes = onSnapshot(q, (snapshot) => {
+            let chamouAinda = false;
+            snapshot.forEach((docItem) => {
+                const data = docItem.data();
+                if (data.ts && Date.now() - data.ts > 60000) { deleteDoc(docItem.ref).catch(() => {}); return; }
+                if (data.destinatario === uidUsuario && data.status === 'pendente') {
+                    chamouAinda = true;
+                    if (window.chamadaEntranteDocId !== docItem.id) {
+                        window.chamadaEntranteDocId = docItem.id;
+                        const nomeChamada = data.remetenteNome || data.remetente.split('@')[0];
+                        document.getElementById('incoming-caller-name').innerText = `📞 ${nomeChamada}`;
+                        document.getElementById('incoming-caller-avatar').innerText = nomeChamada.charAt(0).toUpperCase();
+                        document.getElementById('modal-incoming-call').style.display = 'flex';
+                        iniciarSomCampainha('tocar');
+                    }
+                }
+            });
+            // Se a chamada pendente foi cancelada/desligada antes de atender
+            if (!chamouAinda && window.chamadaEntranteDocId) {
+                document.getElementById('modal-incoming-call').style.display = 'none';
+                pararSomCampainha();
+                window.chamadaEntranteDocId = null;
+            }
+        });
+    }
+
+    window.aceitarChamada = async () => {
+        pararSomCampainha();
+        document.getElementById('modal-incoming-call').style.display = 'none';
+        document.getElementById('call-screen').classList.remove('hidden');
+        document.getElementById('call-status').innerText = "A conectar...";
+        document.getElementById('call-placeholder-info').style.display = 'none';
+
+        const callDoc = doc(db, "chamadas", window.chamadaEntranteDocId);
+        const callSnap = await getDoc(callDoc);
+        if (!callSnap.exists()) return;
+        const data = callSnap.data();
+
+        // Identificar o contato que ligou para sincronizar encerramento correto
+        // Buscamos o UID do remetente pelo e-mail ou criamos o chat sala
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.comVideo });
+            document.getElementById('local-video').srcObject = localStream;
+
+            peerConnection = new RTCPeerConnection(serversConfig);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById('call-placeholder-info').style.display = 'none';
+                document.getElementById('remote-video').srcObject = event.streams[0];
+            };
+
+            const answerCandidates = collection(callDoc, nomeSub('a', data.n));
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    addDoc(answerCandidates, event.candidate.toJSON()).then((r) => candidatosMeus.push(r)).catch(() => {});
+                }
+            };
+
+            const offer = data.oferta;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+
+            await updateDoc(callDoc, {
+                resposta: { type: answer.type, sdp: answer.sdp },
+                status: 'aceita'
+            });
+
+            // Escutar se o chamador desligou
+            unsubscribeCall = onSnapshot(callDoc, (snapshot) => {
+                if (!snapshot.exists()) {
+                    fecharTelaChamadaUI();
+                }
+            });
+
+            unsubCandidatos = onSnapshot(collection(callDoc, nomeSub('o', data.n)), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' && peerConnection) {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        peerConnection.addIceCandidate(candidate).catch(() => {});
+                    }
+                });
+            });
+
+            document.getElementById('call-status').innerText = "Em chamada";
+        } catch (err) {
+            alert("Erro ao atender chamada: " + err.message);
+            encerrarChamada();
+        }
+    };
+
+    window.recusarChamada = async () => {
+        pararSomCampainha();
+        document.getElementById('modal-incoming-call').style.display = 'none';
+        if (window.chamadaEntranteDocId) {
+            try { await deleteDoc(doc(db, "chamadas", window.chamadaEntranteDocId)); } catch(e){}
+            window.chamadaEntranteDocId = null;
+        }
+    };
+
+    // BOTÃO DESLIGAR (Sincronizado em ambas as pontas)
+    window.encerrarChamada = async () => {
+        pararSomCampainha();
+        if (contatoSelecionado && usuarioAtual) {
+            const idChamada = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+            try { await deleteDoc(doc(db, "chamadas", idChamada)); } catch(e){}
+        }
+        if (window.chamadaEntranteDocId) {
+            try { await deleteDoc(doc(db, "chamadas", window.chamadaEntranteDocId)); } catch(e){}
+            window.chamadaEntranteDocId = null;
+        }
+        fecharTelaChamadaUI();
+    };
+
+    function fecharTelaChamadaUI() {
+        pararSomCampainha();
+        if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+        if (peerConnection) { peerConnection.close(); peerConnection = null; }
+        if (unsubscribeCall) { unsubscribeCall(); unsubscribeCall = null; }
+        if (unsubCandidatos) { unsubCandidatos(); unsubCandidatos = null; }
+        candidatosMeus.splice(0).forEach((r) => deleteDoc(r).catch(() => {}));
+        document.getElementById('call-screen').classList.add('hidden');
+        document.getElementById('modal-incoming-call').style.display = 'none';
+        document.getElementById('remote-video').srcObject = null;
+        document.getElementById('local-video').srcObject = null;
+    }
+
+    window.alternarMicrofone = () => {
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            audioTrack.enabled = !audioTrack.enabled;
+            document.getElementById('btn-toggle-mic').style.background = audioTrack.enabled ? '#333' : '#ea0038';
+        }
+    };
+
+    window.alternarCamera = () => {
+        if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                document.getElementById('btn-toggle-cam').style.background = videoTrack.enabled ? '#333' : '#ea0038';
             }
         }
-    </script>
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            usuarioAtual = user;
+            document.querySelectorAll('.btn-sair').forEach((b) => b.classList.toggle('hidden', user.email !== EMAIL_ADMIN));
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.add('hidden');
+            document.getElementById('contacts-screen').classList.remove('hidden');
+            
+            const perfilMeu = await obterMeuPerfil();
+            let nomeExibicao = perfilMeu.nome || user.email.split('@')[0];
+            let fotoUrl = perfilMeu.fotoUrl || "";
+            meuNomeAtual = nomeExibicao;
+            document.getElementById('user-display-contacts').innerText = nomeExibicao;
+            
+            if (fotoUrl) {
+                document.getElementById('meu-img-topo').src = fotoUrl;
+                document.getElementById('meu-img-topo').classList.remove('hidden');
+                document.getElementById('meu-avatar-topo').classList.add('hidden');
+            } else {
+                document.getElementById('meu-avatar-topo').innerText = nomeExibicao.charAt(0).toUpperCase();
+                document.getElementById('meu-avatar-topo').classList.remove('hidden');
+                document.getElementById('meu-img-topo').classList.add('hidden');
+            }
+
+            escutarChamadasEntrantes(user.uid);
+            iniciarAgenda();
+            atualizarBarraAtalhos();
+            registrarPushSePermitido();
+            (async () => { await garantirHandle(perfilMeu); await sincronizarPerfilPublico(perfilMeu); processarConvite(); processarConviteSlug(); })();
+        } else {
+            usuarioAtual = null;
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('contacts-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.add('hidden');
+        }
+    });
+
+    window.cadastrar = async () => {
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('password').value;
+        if (!email || !senha) return alert("Preencha e-mail e senha.");
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, senha);
+            const nomeInicial = email.split('@')[0];
+            const h = gerarHandle();
+            await setDoc(doc(db, "usuarios", cred.user.uid), { email: email, nome: nomeInicial, bloqueado: false, limiteProdutos: 10, linkPessoal: "", fotoUrl: "", handle: h });
+            try { await setDoc(doc(db, "perfis", h), { uid: cred.user.uid, n: nomeInicial.slice(0, 60), f: '', l: '' }); } catch (_) {}
+            alert("Conta criada!");
+        } catch (e) { alert(e.message); }
+    };
+
+    window.entrar = async () => {
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('password').value;
+        if (!email || !senha) return alert("Preencha e-mail e senha.");
+        try { await signInWithEmailAndPassword(auth, email, senha); } catch (e) { alert(e.message); }
+    };
+
+    window.sair = async () => {
+        if (unsubChamadasEntrantes) { unsubChamadasEntrantes(); unsubChamadasEntrantes = null; }
+        if (unsubAgenda) { unsubAgenda(); unsubAgenda = null; }
+        if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+        limiteUsuarioCache = null; vitrineCacheTs = 0;
+        Object.keys(localStorage).filter((k) => k.startsWith('zl_m_')).forEach((k) => localStorage.removeItem(k));
+        await signOut(auth);
+    };
+
+    function renderizarAgenda(dados) {
+        const listaDiv = document.getElementById('lista-contatos');
+        const itens = Object.entries(dados).sort((a, b) => (b[1].t || 0) - (a[1].t || 0));
+        listaDiv.innerHTML = "";
+        itens.forEach(([uid, e]) => {
+            const nomeContato = e.n || 'Usuário';
+            contatosCache[uid] = { nome: nomeContato, foto: e.f || '', token: e.k || '' };
+            const avatarHtml = e.f ?
+                `<img src="${esc(urlSegura(e.f, true))}" class="avatar">` :
+                `<div class="avatar">${esc(nomeContato.charAt(0).toUpperCase())}</div>`;
+            listaDiv.innerHTML += `
+                <div class="contact-item" onclick="abrirChatPorId('${esc(uid)}')">
+                    <div class="contact-info">
+                        ${avatarHtml}
+                        <span class="contact-name">${esc(nomeContato)}</span>
+                    </div>
+                    <span style="font-size: 11px; color: #00a884; font-weight: bold;">Conversar 💬</span>
+                </div>`;
+        });
+        if (!itens.length) listaDiv.innerHTML = "<p style='text-align:center; opacity:0.7; font-size:13px; margin:20px 10px;'>Você ainda não tem contatos.<br>Toque em <b>Compartilhar</b> para enviar o seu link de atendimento.</p>";
+    }
+
+    function iniciarAgenda() {
+        if (unsubAgenda) unsubAgenda();
+        const chave = 'zl_agenda_' + usuarioAtual.uid;
+        const c = lerCache(chave, Infinity);
+        if (c) renderizarAgenda(c);
+        unsubAgenda = onSnapshot(doc(db, "agenda", usuarioAtual.uid), (snap) => {
+            const dados = snap.exists() ? (snap.data().c || {}) : {};
+            salvarCache(chave, dados);
+            renderizarAgenda(dados);
+        }, (err) => console.warn('Agenda:', err.message));
+    }
+
+    window.abrirChatPorId = (id) => {
+        const c = contatosCache[id];
+        if (c) window.abrirChat(id, c.nome, c.foto);
+    };
+
+    window.abrirChat = (uidContato, nomeContato, fotoContato) => {
+        contatoSelecionado = { uid: uidContato, nome: nomeContato, fotoUrl: fotoContato };
+        apresentarAoContato(uidContato).catch((e) => console.warn('Apresentação:', e.message));
+        document.getElementById('chat-title').innerText = nomeContato;
+        
+        const chatAvatar = document.getElementById('chat-avatar-topo');
+        const chatImg = document.getElementById('chat-img-topo');
+        if (fotoContato) {
+            chatImg.src = fotoContato;
+            chatImg.classList.remove('hidden');
+            chatAvatar.classList.add('hidden');
+        } else {
+            chatAvatar.innerText = nomeContato.charAt(0).toUpperCase();
+            chatAvatar.classList.remove('hidden');
+            chatImg.classList.add('hidden');
+        }
+
+        document.getElementById('contacts-screen').classList.add('hidden');
+        document.getElementById('chat-screen').classList.remove('hidden');
+        limiteMsgs = 30;
+        escutarMensagensPrivadas();
+    };
+
+    window.verMaisMensagens = async () => {
+        try {
+            const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+            const maisAntiga = msgsAtuais.length ? msgsAtuais[0].t : Date.now();
+            const snap = await getDocs(query(collection(db, "conversas", idSala, "mensagens"), where("criadoEm", "<", Timestamp.fromMillis(maisAntiga)), orderBy("criadoEm", "desc"), limit(30)));
+            let cortou = false;
+            snap.docs.forEach((d) => {
+                if (cortou) return;
+                const m = sanitizarMsg(d.id, d.data());
+                if (m.tipo === 'limpar') { cortou = true; return; }
+                if (!msgsAtuais.some((x) => x.id === m.id)) msgsAtuais.push(m);
+            });
+            temAnteriores = snap.size >= 30 && !cortou;
+            salvarMsgsCache();
+            renderizarListaMensagens(msgsAtuais, temAnteriores);
+        } catch (e) { alert("Erro ao carregar mensagens anteriores: " + e.message); }
+    };
+
+    window.filtrarMensagensLocais = () => {
+        const t = document.getElementById('input-busca-msg').value.toLowerCase();
+        document.querySelectorAll('#mensagens .msg').forEach((m) => { m.style.display = m.innerText.toLowerCase().includes(t) ? '' : 'none'; });
+    };
+
+    window.voltarParaContatos = () => {
+        tokenEscuta++;
+        if (unsubscribeChat) unsubscribeChat();
+        document.getElementById('chat-screen').classList.add('hidden');
+        document.getElementById('contacts-screen').classList.remove('hidden');
+    };
+
+    function obterIdSala(uid1, uid2) { return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`; }
+
+    window.limparConversaAtual = async () => {
+        if (!contatoSelecionado || !usuarioAtual) return;
+        if (!confirm("Tem certeza que deseja apagar todas as mensagens, áudios, fotos e vídeos desta conversa?")) return;
+        try {
+            const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+            const ids = msgsAtuais.map((m) => m.id);
+            // marcador: faz o outro celular limpar o cache local sem ler nada
+            await addDoc(collection(db, "conversas", idSala, "mensagens"), { tipo: 'limpar', texto: '', remetente: usuarioAtual.email, criadoEm: serverTimestamp() });
+            await Promise.all(ids.map((id) => deleteDoc(doc(db, "conversas", idSala, "mensagens", id))));
+            alert("Conversa limpa com sucesso!");
+        } catch (err) {
+            alert("Erro ao limpar conversa: " + err.message);
+        }
+    };
+
+    const sanitizarMsg = (id, d) => { const { criadoEm, ...resto } = d; return { id, ...resto, t: criadoEm && criadoEm.toMillis ? criadoEm.toMillis() : Date.now() }; };
+
+    function salvarMsgsCache() {
+        msgsAtuais.sort((a, b) => a.t - b.t);
+        if (msgsAtuais.length > 300) msgsAtuais = msgsAtuais.slice(-300);
+        const sem = (m) => { const c = { ...m }; ['imagemBase64', 'videoBase64', 'audioBase64'].forEach((k) => delete c[k]); return c; };
+        try { localStorage.setItem(msgsChave, JSON.stringify({ base: msgsBase, msgs: msgsAtuais })); }
+        catch (_) { try { localStorage.setItem(msgsChave, JSON.stringify({ base: msgsBase, msgs: msgsAtuais.slice(-50).map(sem) })); } catch (__) {} }
+    }
+
+    function aplicarMsg(docSnap, tipo) {
+        const m = sanitizarMsg(docSnap.id, docSnap.data({ serverTimestamps: 'estimate' }));
+        if (!docSnap.metadata.hasPendingWrites && m.t > msgsBase) msgsBase = m.t;
+        if (tipo === 'removed') { msgsAtuais = msgsAtuais.filter((x) => x.id !== m.id); return; }
+        if (m.tipo === 'limpar') { msgsAtuais = msgsAtuais.filter((x) => x.t > m.t); temAnteriores = false; return; }
+        const i = msgsAtuais.findIndex((x) => x.id === m.id);
+        if (i >= 0) msgsAtuais[i] = m; else msgsAtuais.push(m);
+    }
+
+    // Abre o chat: mostra o cache local e só lê do Firestore o que é NOVO
+    async function escutarMensagensPrivadas() {
+        const meuToken = ++tokenEscuta;
+        if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        msgsChave = 'zl_m_' + idSala;
+        msgsAtuais = []; msgsBase = 0;
+        try { const c = JSON.parse(localStorage.getItem(msgsChave)); if (c) { msgsAtuais = c.msgs || []; msgsBase = c.base || 0; } } catch (_) {}
+        temAnteriores = msgsAtuais.length >= 30;
+        renderizarListaMensagens(msgsAtuais, temAnteriores);
+        const ref = collection(db, "conversas", idSala, "mensagens");
+        try {
+            if (!msgsBase) { // primeira vez neste aparelho: 1 leitura única das últimas 30
+                const snap = await getDocs(query(ref, orderBy("criadoEm", "desc"), limit(30)));
+                if (meuToken !== tokenEscuta) return;
+                temAnteriores = snap.size >= 30;
+                snap.docs.slice().reverse().forEach((d) => aplicarMsg(d, 'added'));
+                salvarMsgsCache();
+                renderizarListaMensagens(msgsAtuais, temAnteriores);
+            }
+            const q = query(ref, where("criadoEm", ">", Timestamp.fromMillis(msgsBase + 1)), orderBy("criadoEm", "asc"));
+            unsubscribeChat = onSnapshot(q, (snapshot) => {
+                const mudancas = snapshot.docChanges();
+                if (!mudancas.length) return;
+                mudancas.forEach((ch) => aplicarMsg(ch.doc, ch.type));
+                salvarMsgsCache();
+                renderizarListaMensagens(msgsAtuais, temAnteriores);
+            });
+        } catch (e) { console.warn('Chat:', e.message); }
+    }
+
+    function formatarTextoComMidia(texto) {
+        if (!texto) return '';
+        texto = esc(texto);
+        const padraoUrl = /((https?:\/\/[^\s]+)|(www\.[^\s]+))/g;
+        let textoFormatado = texto.replace(padraoUrl, (url) => {
+            let urlCompleta = url;
+            if (url.startsWith('www.')) {
+                urlCompleta = 'https://' + url;
+            }
+            return `<a href="${urlCompleta}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+
+        let embedHtml = '';
+        const matchYoutube = texto.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (matchYoutube && matchYoutube[1]) {
+            const videoId = matchYoutube[1];
+            embedHtml += `<div class="embed-container"><iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe></div>`;
+        }
+
+        const matchTiktok = texto.match(/(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
+        if (matchTiktok && matchTiktok[1]) {
+            const tiktokId = matchTiktok[1];
+            embedHtml += `<div class="embed-container" style="aspect-ratio: 9/16;"><iframe src="https://www.tiktok.com/embed/v2/${tiktokId}" allowfullscreen></iframe></div>`;
+        }
+
+        return textoFormatado + embedHtml;
+    }
+
+    function renderizarListaMensagens(lista, temMais) {
+        const box = document.getElementById('mensagens');
+        box.innerHTML = temMais ? '<button onclick="verMaisMensagens()" style="width:auto; align-self:center; padding:6px 14px; font-size:12px; border-radius:16px; margin:0 0 6px;">⬆ Ver anteriores</button>' : '';
+        lista.forEach((data) => {
+            const eMinha = data.remetente === usuarioAtual.email;
+            let conteudoHtml = `<div style="font-size: 14px;">${formatarTextoComMidia(data.texto)}</div>`;
+            
+            if (data.tipo === 'produto') {
+                let cartaoHtml = `<div style="font-size: 14px; margin-bottom: 6px;">${formatarTextoComMidia(data.texto)}</div>`;
+                if (urlSegura(data.imagemUrlProduto, true)) cartaoHtml += `<img src="${esc(urlSegura(data.imagemUrlProduto, true))}" style="width:100%; max-height:220px; object-fit:cover; border-radius:6px; margin-bottom:6px; cursor:pointer;" onclick="ampliarImagem(this.src)">`;
+                if (urlSegura(data.linkAfiliado)) cartaoHtml += `<a href="${esc(urlSegura(data.linkAfiliado))}" target="_blank" rel="noopener noreferrer" style="display:block; background:#00a884; color:white; text-align:center; padding:6px; border-radius:4px; text-decoration:none; font-size:12px; font-weight:bold;">Comprar 🛒</a>`;
+                conteudoHtml = `<div class="msg-product-body">${cartaoHtml}</div>`;
+            } else if (data.tipo === 'imagem') {
+                let imgSrc = esc(urlSegura(data.imagemUrlLocal || data.imagemBase64, true));
+                conteudoHtml += `<img class="msg-img" src="${imgSrc}" onclick="ampliarImagem(this.src)" title="Toque para ampliar"><br><a class="msg-download-btn" href="${imgSrc}" download="foto.jpg">📥 Baixar Imagem</a>`;
+            } else if (data.tipo === 'video') {
+                let vidSrc = esc(urlSegura(data.videoUrlLocal || data.videoBase64, true));
+                conteudoHtml += `<video controls width="100%"><source src="${vidSrc}" type="video/mp4"></video><br><a class="msg-download-btn" href="${vidSrc}" download="video.mp4">📥 Baixar Vídeo</a>`;
+            } else if (data.tipo === 'audio') {
+                const audioId = "audio_" + data.id;
+                let audSrc = esc(urlSegura(data.audioUrlLocal || data.audioBase64, true));
+                conteudoHtml += `
+                    <div class="wa-audio-player">
+                        <button class="wa-play-btn" id="btn_${audioId}" onclick="tocarAudioLocal('${audioId}')">▶</button>
+                        <div class="wa-audio-info">
+                            <div class="wa-audio-bar" onclick="seekAudio(event, '${audioId}')"><div class="wa-audio-progress" id="prog_${audioId}"></div></div>
+                            <span class="wa-audio-time" id="time_${audioId}">0:00</span>
+                        </div>
+                        <audio id="${audioId}" src="${audSrc}" preload="metadata" ontimeupdate="atualizarProgressoAudio('${audioId}')" onended="audioTerminou('${audioId}')"></audio>
+                    </div>`;
+            }
+            box.innerHTML += `<div class="${eMinha ? 'msg msg-minha' : 'msg'}"><div class="msg-content">${conteudoHtml}</div></div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    window.tocarAudioLocal = (id) => {
+        const audio = document.getElementById(id);
+        const btn = document.getElementById('btn_' + id);
+        if (audio.paused) { 
+            audio.play().catch(e => alert("Erro ao reproduzir áudio: " + e.message)); 
+            btn.innerText = "⏸"; 
+        } else { 
+            audio.pause(); 
+            btn.innerText = "▶"; 
+        }
+    };
+
+    window.seekAudio = (event, id) => {
+        const audio = document.getElementById(id);
+        const bar = event.currentTarget;
+        const rect = bar.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const width = bar.offsetWidth;
+        if (audio.duration) {
+            audio.currentTime = (clickX / width) * audio.duration;
+        }
+    };
+
+    window.atualizarProgressoAudio = (id) => {
+        const audio = document.getElementById(id);
+        const prog = document.getElementById('prog_' + id);
+        const time = document.getElementById('time_' + id);
+        if (audio.duration) {
+            prog.style.width = ((audio.currentTime / audio.duration) * 100) + '%';
+            const min = Math.floor(audio.currentTime / 60);
+            const sec = Math.floor(audio.currentTime % 60);
+            time.innerText = min + ':' + (sec < 10 ? '0' : '') + sec;
+        }
+    };
+
+    window.audioTerminou = (id) => {
+        const btn = document.getElementById('btn_' + id);
+        const prog = document.getElementById('prog_' + id);
+        if(btn) btn.innerText = "▶";
+        if(prog) prog.style.width = '0%';
+    };
+
+    window.enviarMensagemPrivada = async () => {
+        const inputEl = document.getElementById('mensagem-texto');
+        if (!inputEl.value.trim() || !contatoSelecionado) return;
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        await addDoc(collection(db, "conversas", idSala, "mensagens"), {
+            texto: inputEl.value, remetente: usuarioAtual.email, tipo: "texto", criadoEm: serverTimestamp()
+        });
+        inputEl.value = "";
+    };
+
+    const R2_WORKER = 'https://zapleve-uploader.bmlimp8.workers.dev'; // troque pela URL do seu Worker
+    const MAX_VIDEO_MB = 15;
+
+    async function subirParaR2(blob, ext) {
+        const token = await auth.currentUser.getIdToken();
+        const r = await fetch(`${R2_WORKER}/upload?ext=${ext}`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+        if (!r.ok) throw new Error('Falha no upload (' + r.status + ')');
+        return (await r.json()).url;
+    }
+
+    function comprimirImagem(file, maxLado = 1280, qualidade = 0.75) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const k = Math.min(1, maxLado / Math.max(img.width, img.height));
+                const c = document.createElement('canvas');
+                c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+                c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                URL.revokeObjectURL(img.src);
+                c.toBlob((b) => b ? resolve(b) : reject(new Error('Falha ao comprimir')), 'image/webp', qualidade);
+            };
+            img.onerror = () => reject(new Error('Imagem inválida'));
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    async function enviarMidia(blob, ext, tipo, texto, campo) {
+        const idSala = obterIdSala(usuarioAtual.uid, contatoSelecionado.uid);
+        const url = await subirParaR2(blob, ext);
+        await addDoc(collection(db, "conversas", idSala, "mensagens"), { texto, [campo]: url, remetente: usuarioAtual.email, tipo, criadoEm: serverTimestamp() });
+    }
+
+    window.enviarImagemGlobal = async (input) => {
+        const file = input.files[0]; input.value = '';
+        if (!file || !contatoSelecionado) return;
+        try { await enviarMidia(await comprimirImagem(file), 'webp', 'imagem', '📷 Imagem', 'imagemUrlLocal'); }
+        catch (e) { alert('Erro ao enviar imagem: ' + e.message); }
+    };
+
+    window.enviarVideoGlobal = async (input) => {
+        const file = input.files[0]; input.value = '';
+        if (!file || !contatoSelecionado) return;
+        if (file.size > MAX_VIDEO_MB * 1048576) return alert(`Vídeo muito grande (máx. ${MAX_VIDEO_MB} MB).`);
+        try { await enviarMidia(file, file.type.includes('webm') ? 'webm' : 'mp4', 'video', '📹 Vídeo', 'videoUrlLocal'); }
+        catch (e) { alert('Erro ao enviar vídeo: ' + e.message); }
+    };
+
+    let mediaRecorder = null, audioChunks = [];
+    window.toggleGravarAudio = async () => {
+        const btnAudio = document.getElementById('btn-gravar-audio');
+        if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert("O seu navegador não permite gravação de áudio (necessário HTTPS).");
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true, 
+                        noiseSuppression: true, 
+                        autoGainControl: true 
+                    } 
+                });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    try { await enviarMidia(blob, 'webm', 'audio', '🎙️ Áudio', 'audioUrlLocal'); }
+                    catch (e) { alert('Erro ao enviar áudio: ' + e.message); }
+                };
+                mediaRecorder.start();
+                btnAudio.classList.add('gravando');
+                btnAudio.innerText = "⏹️";
+            } catch (err) {
+                alert("Erro ao aceder ao microfone. Verifique as permissões do seu navegador: " + err.message);
+            }
+        } else {
+            mediaRecorder.stop();
+            if(mediaRecorder.stream) {
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+            }
+            btnAudio.classList.remove('gravando');
+            btnAudio.innerText = "🎙️";
+        }
+    };
+    window.indicarAmigo = async () => {
+        const url = await meuLinkAtendimento();
+        const dados = { title: 'Zap Leve', text: 'Fale comigo no Zap Leve! Chat e chamadas grátis ⚡💬', url };
+        try {
+            if (navigator.share) { await navigator.share(dados); return; }
+            await navigator.clipboard.writeText(dados.text + ' ' + url);
+            alert('Link copiado! Cole no WhatsApp ou onde quiser compartilhar.');
+        } catch (e) {
+            if (e.name !== 'AbortError') prompt('Copie o link:', url);
+        }
+    };
+
+    window.copiarMeuLink = async () => {
+        const url = await meuLinkAtendimento();
+        try { await navigator.clipboard.writeText(url); alert('Link de atendimento copiado!\n' + url); }
+        catch (e) { prompt('Copie o link:', url); }
+    };
+    if (slugInicial) abrirLojaPublica(slugInicial);
+</script>
+
 </body>
 </html>
