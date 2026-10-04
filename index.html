@@ -1,123 +1,99 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OficinaPro - Plataforma para Técnicos de Eletrodomésticos</title>
+    <title>Tectop - Chat Técnico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased pb-24" x-data="appData()">
+<body class="bg-slate-100 h-screen flex flex-col justify-between" x-data="chatApp()">
 
-    <!-- Topo -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg">
-        <div class="flex items-center space-x-2">
-            <div class="bg-emerald-500 text-slate-950 font-black p-2 rounded-xl shadow-md flex items-center justify-center">
-                <i class="fa-solid fa-bolt text-lg"></i>
-            </div>
-            <div>
-                <h1 class="text-base font-bold tracking-tight text-white">Oficina<span class="text-emerald-400">Pro</span></h1>
-                <p class="text-xs text-slate-400" x-text="modo === 'cliente' ? 'Atendimento: ' + tecnico.nome : 'Painel do Técnico'"></p>
-            </div>
-        </div>
-        <div>
-            <button @click="alternarModo()" class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-emerald-400 font-semibold hover:bg-slate-700 transition">
-                <i class="fa-solid fa-rotate mr-1"></i> Ver como <span x-text="modo === 'cliente' ? 'Técnico' : 'Cliente'"></span>
-            </button>
-        </div>
+    <!-- Cabeçalho -->
+    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="font-bold text-lg">Tectop - Atendimento</h1>
+        <span class="text-xs bg-blue-500 px-2 py-1 rounded">Online (Cloudflare)</span>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-4">
+    <!-- Corpo das Mensagens -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        <template x-for="msg in messages" :key="msg.id">
+            <div :class="msg.sender === currentUser ? 'text-right' : 'text-left'">
+                <div class="inline-block p-3 rounded-lg max-w-xs md:max-w-md shadow"
+                     :class="msg.sender === currentUser ? 'bg-blue-500 text-white' : 'bg-white text-slate-800'">
+                    
+                    <!-- Texto -->
+                    <template x-if="msg.type === 'text'">
+                        <p x-text="msg.content"></p>
+                    </template>
 
-        <!--- VISÃO DO CLIENTE --->
-        <div x-show="modo === 'cliente'" class="space-y-4" x-transition>
-            <div class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl text-center">
-                <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-emerald-500/30">
-                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    <!-- Imagem -->
+                    <template x-if="msg.type === 'image'">
+                        <img :src="msg.content" class="rounded max-h-48 object-cover cursor-pointer">
+                    </template>
+
+                    <!-- Áudio -->
+                    <template x-if="msg.type === 'audio'">
+                        <audio controls :src="msg.content" class="w-full"></audio>
+                    </template>
+
                 </div>
-                <h2 class="text-lg font-bold text-white" x-text="tecnico.nome"></h2>
-                <p class="text-xs text-slate-400 mt-1">Especialista em Máquinas de Lavar, Micro-ondas e Geladeiras.</p>
-                <div class="mt-4 pt-4 border-t border-slate-800 flex justify-center space-x-2">
-                    <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20"><i class="fa-solid fa-check mr-1"></i> Orçamento Rápido via IA</span>
-                </div>
+                <span class="block text-[10px] text-slate-400 mt-1" x-text="msg.sender"></span>
             </div>
+        </template>
+    </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
-                <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-comment-dots text-emerald-400 mr-2"></i>Qual é o problema no eletrodoméstico?</h3>
-                
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Seu Nome</label>
-                    <input type="text" x-model="cliente.nome" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
-                </div>
+    <!-- Barra de Envio -->
+    <div class="bg-white p-3 border-t flex items-center gap-2">
+        <!-- Input de Ficheiro (Foto/Áudio) -->
+        <input type="file" id="fileInput" class="hidden" @change="uploadFile">
+        <button @click="document.getElementById('fileInput').click()" class="bg-slate-200 p-2 rounded-full text-slate-600 hover:bg-slate-300">
+            📎
+        </button>
 
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Qual aparelho?</label>
-                    <select x-model="cliente.equipamento" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
-                        <option>Máquina de Lavar (Lava e Seca / Tanquinho)</option>
-                        <option>Micro-ondas</option>
-                        <option>Geladeira / Refrigeração</option>
-                        <option>Outro Eletrodoméstico</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Descreva o defeito</label>
-                    <textarea x-model="cliente.relato" rows="3" placeholder="Ex: A máquina não está centrifugando..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
-                </div>
-
-                <button @click="enviarParaTecnico()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm">
-                    Solicitar Prévia de Orçamento
-                </button>
-
-                <div x-show="orcamentoGerado" class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-2" x-transition>
-                    <p class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-robot mr-1"></i> Prévia de Orçamento da IA:</p>
-                    <p class="text-xs text-slate-300" x-text="previaTexto"></p>
-                </div>
-            </div>
-        </div>
-
-        <!--- VISÃO DO TÉCNICO --->
-        <div x-show="modo === 'tecnico'" class="space-y-4" x-transition>
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-base text-white"><i class="fa-solid fa-inbox text-emerald-400 mr-2"></i>Solicitações de Clientes</h3>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 font-bold">1 Novo</span>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="text-sm font-bold text-white">Maria Silva</h4>
-                                <p class="text-xs text-slate-400">Máquina de Lavar - Não centrifuga</p>
-                            </div>
-                            <span class="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">Aguardando Resposta</span>
-                        </div>
-                        <p class="text-xs bg-slate-900 p-2 rounded-lg text-slate-300 italic">"A máquina enche de água mas na hora de girar o tambor ela para."</p>
-                        <button @click="alert('Abrindo chat direto com o cliente...')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-2 rounded-lg text-xs transition">
-                            <i class="fa-brands fa-whatsapp mr-1"></i> Abrir Chat & Chamar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </main>
+        <!-- Input de Texto -->
+        <input type="text" x-model="newMessage" @keydown.enter="sendText" placeholder="Escreva a mensagem ou descreva o problema..." class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:border-blue-500">
+        
+        <button @click="sendText" class="bg-blue-600 text-white px-4 py-2 rounded-full font-medium">Enviar</button>
+    </div>
 
     <script>
-        function appData() {
+        function chatApp() {
             return {
-                modo: 'cliente',
-                tecnico: { nome: 'Carlos Consertos & Eletro' },
-                cliente: { nome: '', equipamento: 'Máquina de Lavar', relato: '' },
-                orcamentoGerado: false,
-                previaTexto: '',
-                alternarModo() { this.modo = this.modo === 'cliente' ? 'tecnico' : 'cliente'; },
-                enviarParaTecnico() {
-                    if(!this.cliente.nome || !this.cliente.relato) { alert('Preencha seu nome e o defeito.'); return; }
-                    this.orcamentoGerado = true;
-                    this.previaTexto = `Possível causa: Placa de potência ou bomba de drenagem travada. Estimativa prévia: R$ 140,00 a R$ 260,00.`;
+                currentUser: 'Técnico_João',
+                roomId: 'sala_cliente_123',
+                messages: [],
+                newMessage: '',
+                async init() {
+                    await this.fetchMessages();
+                    // Polling leve ou WebSocket para atualizar em tempo real
+                    setInterval(() => this.fetchMessages(), 3000);
+                },
+                async fetchMessages() {
+                    const res = await fetch(`https://seu-worker.sua-subconta.workers.dev/api/messages?room_id=${this.roomId}`);
+                    this.messages = await res.json();
+                },
+                async sendText() {
+                    if (!this.newMessage.trim()) return;
+                    // Lógica para enviar texto via POST para o Worker
+                    this.newMessage = '';
+                },
+                async uploadFile(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("room_id", this.roomId);
+                    formData.append("sender", this.currentUser);
+                    formData.append("type", file.type.startsWith('image') ? 'image' : 'audio');
+
+                    await fetch(`https://seu-worker.sua-subconta.workers.dev/api/upload`, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    await this.fetchMessages();
                 }
             }
         }
