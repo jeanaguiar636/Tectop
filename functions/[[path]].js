@@ -4,7 +4,7 @@
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Pin",
+  "Access-Control-Allow-Headers": "Content-Type, X-Pin, X-Admin",
 };
 
 const json = (data, status = 200) =>
@@ -25,8 +25,15 @@ async function preparar(db) {
     id TEXT PRIMARY KEY, room_id TEXT, sender TEXT, status TEXT, criado INTEGER)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS sinais (
     id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, de TEXT, tipo TEXT, dados TEXT)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS clientes (
+    id TEXT PRIMARY KEY, slug TEXT, nome TEXT, tel TEXT, criado INTEGER)`).run();
+  for (const col of ["criado INTEGER", "status TEXT"]) {
+    try { await db.prepare(`ALTER TABLE tecnicos ADD COLUMN ${col}`).run(); } catch (e) {}
+  }
   pronto = true;
 }
+
+const adminOk = (req, env) => !!env.ADMIN_KEY && req.headers.get("X-Admin") === env.ADMIN_KEY;
 
 async function hashPin(slug, pin) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(slug + ":" + pin));
@@ -67,7 +74,7 @@ export async function onRequest(context) {
       const row = await env.DB.prepare("SELECT pin_hash FROM tecnicos WHERE slug = ?").bind(slug).first();
       const h = await hashPin(slug, pin);
       if (!row) {
-        await env.DB.prepare("INSERT INTO tecnicos (slug, pin_hash) VALUES (?, ?)").bind(slug, h).run();
+        await env.DB.prepare("INSERT INTO tecnicos (slug, pin_hash, criado, status) VALUES (?, ?, ?, 'teste')").bind(slug, h, Date.now()).run();
       } else if (row.pin_hash !== h) {
         return json({ error: "PIN incorreto" }, 401);
       }
@@ -127,6 +134,37 @@ export async function onRequest(context) {
       throw new Error("Ação inválida");
     }
 
+    // ---- Cadastro de cliente (para o painel do administrador) ----
+    if (url.pathname === "/api/cliente" && request.method === "POST") {
+      const d = await request.json();
+      const slug = String(d.slug || "");
+      const id = String(d.id || "");
+      if (!/^[a-z0-9-]{2,30}$/.test(slug) || id.length < 8) return json({ error: "Dados inválidos" }, 400);
+      await env.DB.prepare("INSERT OR IGNORE INTO clientes (id, slug, nome, tel, criado) VALUES (?, ?, ?, ?, ?)")
+        .bind(id.slice(0, 64), slug, String(d.nome || "").slice(0, 60), String(d.tel || "").replace(/\D/g, "").slice(0, 15), Date.now()).run();
+      return json({ ok: true });
+    }
+
+    // ---- Painel do administrador (exige a variável secreta ADMIN_KEY) ----
+    if (url.pathname === "/api/admin") {
+      if (!env.ADMIN_KEY) return json({ error: "Defina a variável ADMIN_KEY na Cloudflare" }, 503);
+      if (!adminOk(request, env)) return json({ error: "Não autorizado" }, 401);
+      if (request.method === "POST") {
+        const d = await request.json();
+        if (!["teste", "ativo", "suspenso"].includes(d.status)) throw new Error("Status inválido");
+        await env.DB.prepare("UPDATE tecnicos SET status = ? WHERE slug = ?").bind(d.status, String(d.slug || "")).run();
+        return json({ ok: true });
+      }
+      const t = await env.DB.prepare(
+        `SELECT t.slug, t.nome, COALESCE(t.status, 'teste') AS status, t.criado,
+                (SELECT COUNT(*) FROM clientes c WHERE c.slug = t.slug) AS clientes
+         FROM tecnicos t ORDER BY t.criado DESC`).all();
+      const c = await env.DB.prepare(
+        `SELECT c.nome, c.tel, c.slug, c.criado, t.nome AS tecnico
+         FROM clientes c LEFT JOIN tecnicos t ON t.slug = c.slug ORDER BY c.criado DESC LIMIT 500`).all();
+      return json({ tecnicos: t.results, clientes: c.results });
+    }
+
     // ---- Mensagens: ler ----
     if (url.pathname === "/api/messages" && request.method === "GET") {
       const slug = url.searchParams.get("slug");
@@ -152,6 +190,18 @@ export async function onRequest(context) {
 
       if (contentType.includes("application/json")) {
         const d = await request.json();
+        if (d.acao === "apagar") {
+          const slug = String(d.slug || "");
+          if (!(await pinConfere(env, slug, request.headers.get("X-Pin")))) return json({ error: "Não autorizado" }, 401);
+          const m = await env.DB.prepare("SELECT room_id, content, type FROM messages WHERE id = ?").bind(String(d.id || "")).first();
+          if (!m || !m.room_id.startsWith(slug + ":")) return json({ error: "Mensagem não encontrada" }, 404);
+          const pref = url.origin + "/api/files/";
+          if (m.type !== "text" && m.content.startsWith(pref)) {
+            await env.MEDIA_BUCKET.delete(decodeURIComponent(m.content.slice(pref.length)));
+          }
+          await env.DB.prepare("DELETE FROM messages WHERE id = ?").bind(String(d.id)).run();
+          return json({ ok: true });
+        }
         const content = String(d.content || "").trim();
         if (!content) throw new Error("A mensagem não pode estar vazia");
         if (!d.room_id) throw new Error("Informe a sala");
