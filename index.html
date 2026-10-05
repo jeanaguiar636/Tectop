@@ -149,7 +149,7 @@ function app(){return{
   get link(){return location.origin+location.pathname+'?t='+(this.tmp.slug||this.slug)},
   get lista(){return this.msgs},
   async init(){
-    try{const r=await fetch('/api/tecnico?slug='+this.slug);if(r.ok)Object.assign(this.cfg,await r.json())}catch(e){}
+    try{const r=await fetch('/api/tecnico?slug='+this.slug);if(r.ok){const d=await r.json();for(const k in d)if(d[k]!==null&&d[k]!=='')this.cfg[k]=d[k]}}catch(e){}
     this.user=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
     document.title=this.cfg.nome;
     this.manifest();
