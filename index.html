@@ -130,7 +130,7 @@
         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
           <div class="flex justify-between text-[10px] text-slate-400">
             <span class="font-bold" :style="'color:'+cfg.cor" x-text="m.sender"></span>
-            <span x-text="hora(m)"></span>
+            <span class="flex items-center space-x-3"><span x-text="hora(m)"></span><button x-show="tela==='tecnico'" @click="apagar(m)" class="text-red-400 text-xs" aria-label="Apagar"><i class="fa-solid fa-trash"></i></button></span>
           </div>
           <template x-if="tipo(m)==='text'"><div><p class="text-xs text-slate-200" x-text="m.content"></p>
             <a x-show="link2(m)" :href="link2(m)" target="_blank" rel="noopener" class="text-xs underline" :style="'color:'+cfg.cor">Entrar na chamada</a></div></template>
@@ -172,6 +172,7 @@ function app(){return{
   async init(){
     try{const r=await fetch('/api/tecnico?slug='+this.slug);if(r.ok){const d=await r.json();for(const k in d)if(d[k]!==null&&d[k]!=='')this.cfg[k]=d[k]}}catch(e){}
     this.user=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
+    this.registrar();
     document.title=this.cfg.nome;
     this.manifest();
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.ipr=e});
@@ -193,6 +194,7 @@ function app(){return{
     this.user={id:crypto.randomUUID(),nome:nome.trim(),tel:tel.replace(/\D/g,''),senha};
     localStorage.setItem(this.K+'_user',JSON.stringify(this.user));
     localStorage.setItem(this.K+'_on','1');
+    this.registrar();
     this.tela='baixar';
   },
   async baixar(){
@@ -212,7 +214,13 @@ function app(){return{
     if(!r.ok){this.erro=r.status===401?'PIN incorreto.':'Não foi possível entrar. Tente de novo.';return}
     this.erro='';this.pinSessao=pin;this.pinIn='';this.tmp={...this.cfg,slug:this.slug};this.tela='tecnico';this.carregar();
   },
-  async api(url,body){try{return await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}catch(e){return {ok:false,status:0}}},
+  async api(url,body){try{return await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Pin':this.pinSessao},body:JSON.stringify(body)})}catch(e){return {ok:false,status:0}}},
+  registrar(){if(this.user)this.api('/api/cliente',{slug:this.slug,id:this.user.id,nome:this.user.nome,tel:this.user.tel})},
+  async apagar(m){
+    if(!confirm('Apagar esta mensagem? Não dá para desfazer.'))return;
+    const r=await this.api('/api/messages',{acao:'apagar',id:m.id,slug:this.slug});
+    if(r.ok)this.msgs=this.msgs.filter(x=>x.id!==m.id);else this.erro='Não foi possível apagar a mensagem.';
+  },
   async salvarCfg(){
     const slug=(this.tmp.slug||this.slug).toLowerCase().replace(/[^a-z0-9-]/g,'');
     const d={slug,pin:this.pinSessao,nome:this.tmp.nome||this.cfg.nome,cor:this.tmp.cor,base:Number(this.tmp.base)||0};
