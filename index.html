@@ -11,7 +11,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased pb-24" x-data="appData()" x-init="initApp()">
 
-    <!-- Topo / Marca Dinâmica baseada nas Configurações do Técnico -->
+    <!-- Topo / Marca Dinâmica -->
     <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg">
         <div class="flex items-center space-x-2">
             <div class="w-10 h-10 rounded-xl text-slate-950 font-black flex items-center justify-center shadow-md" :style="'background-color: ' + config.corPrimaria">
@@ -33,7 +33,7 @@
 
     <main class="max-w-md mx-auto p-4 space-y-4">
 
-        <!-- TELA 1: VISÃO DO CLIENTE (Chat e Orçamento) -->
+        <!-- TELA 1: VISÃO DO CLIENTE -->
         <div x-show="!modoAdmin" class="space-y-4" x-transition>
             
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
@@ -53,7 +53,7 @@
 
                 <div>
                     <label class="text-xs text-slate-300 font-medium">Seu Nome</label>
-                    <input type="text" x-model="cliente.nome" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
+                    <input type="text" x-model="cliente.nome" id="nomeCliente" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div>
@@ -63,10 +63,10 @@
 
                 <div>
                     <label class="text-xs text-slate-300 font-medium">Descreva o defeito ou dúvida</label>
-                    <textarea x-model="cliente.relato" rows="3" placeholder="O que está acontecendo?" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
+                    <textarea x-model="cliente.relato" id="aparelhoCliente" rows="3" placeholder="O que está acontecendo?" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
                 </div>
 
-                <!-- Botão de Anexo de Foto/Vídeo (R2) -->
+                <!-- Botão de Anexo de Foto/Vídeo -->
                 <div class="grid grid-cols-2 gap-2 pt-1">
                     <label class="bg-slate-950 border border-slate-800 hover:border-slate-700 p-2.5 rounded-xl text-center cursor-pointer transition">
                         <i class="fa-solid fa-camera text-sm block mb-1" :style="'color: ' + config.corPrimaria"></i>
@@ -80,12 +80,12 @@
                     </button>
                 </div>
 
-                <button @click="enviarSolicitacao()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm" :style="'background-color: ' + config.corPrimaria">
+                <button @click="enviarSolicitacao()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer" :style="'background-color: ' + config.corPrimaria">
                     Enviar Mensagem para <span x-text="config.nomeEmpresa"></span>
                 </button>
             </div>
 
-            <!-- HISTÓRICO DE MENSAGENS (D1) -->
+            <!-- HISTÓRICO DE MENSAGENS -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
                 <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Histórico do Chat</h3>
                 <div id="chat-messages" class="space-y-3 max-h-60 overflow-y-auto pr-1">
@@ -106,19 +106,19 @@
 
         </div>
 
-        <!-- TELA 2: PAINEL ADMIN DO TÉCNICO (Editar Nome, Cores e Logótipo) -->
+        <!-- TELA 2: PAINEL ADMIN -->
         <div x-show="modoAdmin" class="space-y-4" x-transition>
             
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color: ' + config.corPrimaria"></i> Painel de Controlo do Técnico</h3>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Modo Admin</span>
+                    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color: ' + config.corPrimaria"></i> Painel Admin</h3>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Ativo</span>
                 </div>
 
                 <div class="space-y-3">
                     <div>
                         <label class="text-xs text-slate-300 font-medium">Nome da sua Empresa / App</label>
-                        <input type="text" x-model="configTemp.nomeEmpresa" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
+                        <input type="text" x-model="configTemp.nomeEmpresa" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none">
                     </div>
 
                     <div>
@@ -130,17 +130,27 @@
                     </div>
 
                     <div class="pt-2">
-                        <button @click="guardarConfiguracoes()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm" :style="'background-color: ' + configTemp.corPrimaria">
+                        <button @click="guardarConfiguracoes()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer" :style="'background-color: ' + configTemp.corPrimaria">
                             Salvar Alterações da Empresa
                         </button>
                     </div>
                 </div>
 
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mt-4">
-                    <p class="text-[11px] text-slate-400">O seu Link Exclusivo para Clientes:</p>
-                    <div class="flex items-center justify-between mt-1">
-                        <span class="text-xs font-mono truncate" :style="'color: ' + config.corPrimaria" x-text="window.location.origin"></span>
-                        <button @click="navigator.clipboard.writeText(window.location.origin); alert('Link copiado!')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-white ml-2"><i class="fa-solid fa-copy"></i></button>
+                <!-- Secção de Ficheiros e Mídias no Admin -->
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-3 mt-4">
+                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-photo-film mr-1"></i> Ficheiros e Mídias dos Clientes:</h4>
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                        <template x-for="msg in mensagens.filter(m => m.type === 'image' || m.type === 'file')">
+                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <span class="text-[10px] font-bold text-white" x-text="msg.sender"></span>
+                                    <p class="text-[10px] text-slate-400" x-text="new Date(msg.created_at).toLocaleString()"></p>
+                                </div>
+                                <a :href="'/api/media/' + msg.content" target="_blank" class="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30">
+                                    Ver Mídia
+                                </a>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -155,7 +165,7 @@
                 modoAdmin: false,
                 config: {
                     nomeEmpresa: 'Tectop Consertos',
-                    corPrimaria: '#10b981' // Verde esmeralda por defeito
+                    corPrimaria: '#10b981'
                 },
                 configTemp: {
                     nomeEmpresa: 'Tectop Consertos',
@@ -163,7 +173,7 @@
                 },
                 cliente: {
                     nome: '',
-                    equipamento: '',
+                    equipamento: 'Máquina de Lavar',
                     relato: ''
                 },
                 mensagens: [],
@@ -175,7 +185,7 @@
                         this.configTemp = { ...this.config };
                     }
                     this.carregarMensagens();
-                    setInterval(() => this.carregarMensagens(), 3000);
+                    setInterval(() => this.carregarMensagens(), 4000);
                 },
 
                 guardarConfiguracoes() {
@@ -209,25 +219,31 @@
                         return;
                     }
 
-                    const textoCompleto = `[${this.cliente.equipamento || 'Geral'}] ${this.cliente.relato}`;
+                    const textoCompleto = `[${this.cliente.equipamento}] ${this.cliente.relato}`;
 
-                    const res = await fetch('/api/messages', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            room_id: 'geral',
-                            sender: this.cliente.nome,
-                            content: textoCompleto,
-                            type: 'text'
-                        })
-                    });
+                    try {
+                        const res = await fetch('/api/messages', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                room_id: 'geral',
+                                sender: this.cliente.nome,
+                                content: textoCompleto,
+                                type: 'text'
+                            })
+                        });
 
-                    if(res.ok) {
-                        this.cliente.relato = '';
-                        this.carregarMensagens();
-                        alert('Mensagem enviada com sucesso para ' + this.config.nomeEmpresa + '!');
-                    } else {
-                        alert('Erro ao enviar mensagem.');
+                        const resultado = await res.json();
+
+                        if(res.ok) {
+                            this.cliente.relato = '';
+                            this.carregarMensagens();
+                            alert('Mensagem enviada com sucesso!');
+                        } else {
+                            alert('Erro do servidor: ' + (resultado.error || 'Desconhecido'));
+                        }
+                    } catch(err) {
+                        alert('Erro de conexão: ' + err.message);
                     }
                 },
 
@@ -241,16 +257,20 @@
                     formData.append('sender', nomeCliente);
                     formData.append('file', file);
 
-                    const res = await fetch('/api/messages', {
-                        method: 'POST',
-                        body: formData
-                    });
+                    try {
+                        const res = await fetch('/api/messages', {
+                            method: 'POST',
+                            body: formData
+                        });
 
-                    if(res.ok) {
-                        this.carregarMensagens();
-                        alert('Ficheiro enviado com sucesso para a Cloudflare R2!');
-                    } else {
-                        alert('Erro ao enviar ficheiro.');
+                        if(res.ok) {
+                            this.carregarMensagens();
+                            alert('Ficheiro enviado com sucesso!');
+                        } else {
+                            alert('Erro ao enviar ficheiro.');
+                        }
+                    } catch(err) {
+                        alert('Erro de conexão ao enviar ficheiro.');
                     }
                 },
 
