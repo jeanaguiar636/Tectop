@@ -1,264 +1,268 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atendimento Exclusivo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <meta name="theme-color" content="#020617">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atendimento Técnico</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta name="theme-color" content="#020617">
+<style type="text/tailwindcss">
+  [x-cloak]{display:none!important}
+  .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3}
+  .inp{@apply w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-slate-500}
+  .lbl{@apply text-xs text-slate-300 font-medium}
+  .btn{@apply w-full text-slate-950 font-bold py-3 rounded-xl text-sm}
+  .mini{@apply bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-center text-[11px] text-slate-300 font-medium cursor-pointer}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased pb-24" x-data="appData()" x-init="initApp()">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased pb-16" x-data="app()" x-init="init()" x-cloak>
 
-    <!-- Topo / Marca Dinâmica -->
-    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-lg">
-        <div class="flex items-center space-x-2">
-            <div class="w-10 h-10 rounded-xl text-slate-950 font-black flex items-center justify-center shadow-md" :style="'background-color: ' + config.corPrimaria">
-                <i class="fa-solid fa-screwdriver-wrench text-base"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-bold tracking-tight text-white" x-text="config.nomeEmpresa"></h1>
-                <p class="text-[11px] font-medium flex items-center" :style="'color: ' + config.corPrimaria">
-                    <span class="w-2 h-2 rounded-full animate-pulse mr-1" :style="'background-color: ' + config.corPrimaria"></span> Atendimento Autorizado
-                </p>
-            </div>
+<header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-4 py-3 flex justify-between items-center">
+  <div class="flex items-center space-x-2">
+    <div class="w-10 h-10 rounded-xl text-slate-950 flex items-center justify-center" :style="'background-color:'+cfg.cor"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <div>
+      <h1 class="text-sm font-bold text-white" x-text="cfg.nome"></h1>
+      <p class="text-[11px]" :style="'color:'+cfg.cor">Atendimento autorizado</p>
+    </div>
+  </div>
+  <button x-show="tela==='app'" @click="sair()" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-300 border border-slate-700">Sair</button>
+  <button x-show="tela==='tecnico'" @click="tela=user?'app':'inicio'" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-300 border border-slate-700">Ver app</button>
+</header>
+
+<main class="max-w-md mx-auto p-4 space-y-4">
+
+  <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
+
+  <!-- 1. Página inicial do link do técnico -->
+  <section x-show="tela==='inicio'" class="card text-center">
+    <h2 class="text-lg font-extrabold text-white">Atendimento de <span x-text="cfg.nome"></span></h2>
+    <p class="text-sm text-slate-300">Mande uma foto do defeito e receba um pré-orçamento na hora.</p>
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="erro='';tela=user?'login':'cadastro'">Baixar aplicativo</button>
+  </section>
+
+  <!-- 2. Criar conta -->
+  <section x-show="tela==='cadastro'" class="card">
+    <h2 class="font-bold text-white">Criar conta</h2>
+    <div><label class="lbl">Seu nome</label><input class="inp" x-model="f.nome" autocomplete="name"></div>
+    <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
+    <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="new-password"></div>
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="criarConta()">Criar conta</button>
+  </section>
+
+  <!-- 3. Baixar (única opção depois de criar a conta) -->
+  <section x-show="tela==='baixar'" class="card text-center">
+    <h2 class="font-bold text-white">Conta criada!</h2>
+    <p class="text-sm text-slate-300">Baixe o aplicativo de <span x-text="cfg.nome"></span> para continuar.</p>
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="baixar()">Baixar aplicativo</button>
+    <div x-show="ajuda" class="text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-3 text-left space-y-2">
+      <p>Seu navegador não abriu a instalação sozinho. Faça assim:</p>
+      <p>iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início". Android: menu do navegador e "Instalar app".</p>
+      <button class="mini w-full" @click="ajuda=false;tela='app';carregar()">Já instalei, continuar</button>
+    </div>
+  </section>
+
+  <!-- 4. Login (volta ao app) -->
+  <section x-show="tela==='login'" class="card">
+    <h2 class="font-bold text-white">Entrar</h2>
+    <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
+    <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="current-password"></div>
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="entrar()">Entrar</button>
+  </section>
+
+  <!-- 5. App do cliente -->
+  <section x-show="tela==='app'" class="space-y-4">
+    <div class="card">
+      <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-message mr-2" :style="'color:'+cfg.cor"></i>Pedir pré-orçamento</h3>
+      <div><label class="lbl">Nome do produto</label><input class="inp" x-model="c.produto" placeholder="Ex: Geladeira, moto, celular"></div>
+      <div><label class="lbl">Descrição do defeito</label><textarea class="inp" rows="3" x-model="c.defeito" placeholder="O que está acontecendo?"></textarea></div>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="mini"><i class="fa-solid fa-camera block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Foto / vídeo<input type="file" accept="image/*,video/*" class="hidden" @change="arquivo($event)"></label>
+        <button class="mini" @click="gravar()"><i class="fa-solid block mb-1 text-sm" :class="gravando?'fa-stop text-red-400':'fa-microphone'" :style="gravando?'':'color:'+cfg.cor"></i><span x-text="gravando?'Parar e enviar':'Áudio'"></span></button>
+        <button class="mini" @click="chamada()"><i class="fa-solid fa-video block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Vídeo ao vivo</button>
+      </div>
+      <button class="btn" :style="'background-color:'+cfg.cor" @click="enviar()">Enviar para <span x-text="cfg.nome"></span></button>
+    </div>
+    <div x-show="orc" class="bg-emerald-950/30 border border-emerald-500/40 rounded-2xl p-4 space-y-1">
+      <h3 class="font-bold text-xs text-emerald-400"><i class="fa-solid fa-calculator mr-1"></i>Pré-orçamento</h3>
+      <p class="text-xs text-slate-300" x-text="orc"></p>
+    </div>
+  </section>
+
+  <!-- 6. Painel do técnico -->
+  <section x-show="tela==='tecLogin'" class="card">
+    <h2 class="font-bold text-white" x-text="temPin?'Entrar como técnico':'Crie seu PIN de técnico'"></h2>
+    <input class="inp" type="password" inputmode="numeric" x-model="pinIn" placeholder="PIN (4 a 8 números)">
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="entrarTec()" x-text="temPin?'Entrar':'Criar PIN'"></button>
+  </section>
+
+  <section x-show="tela==='tecnico'" class="card">
+    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color:'+cfg.cor"></i>Painel do técnico</h3>
+    <div><label class="lbl">Nome da sua empresa</label><input class="inp" x-model="tmp.nome"></div>
+    <div><label class="lbl">Valor base da visita (R$)</label><input class="inp" type="number" x-model="tmp.base"></div>
+    <div><label class="lbl">Cor do app</label><input type="color" x-model="tmp.cor" class="w-full h-10 bg-slate-950 border border-slate-800 rounded-xl p-1"></div>
+    <div><label class="lbl">Código do seu link</label><input class="inp" x-model="tmp.slug"></div>
+    <button class="btn" :style="'background-color:'+tmp.cor" @click="salvarCfg()">Salvar</button>
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+      <p class="lbl">Link para mandar ao cliente</p>
+      <p class="text-xs text-slate-300 break-all" x-text="link"></p>
+      <button class="mini w-full" @click="navigator.clipboard.writeText(link);erro=''">Copiar link</button>
+    </div>
+  </section>
+
+  <!-- Chamados / histórico (cliente vê os dele, técnico vê todos) -->
+  <section x-show="tela==='app'||tela==='tecnico'" class="card">
+    <h3 class="font-bold text-xs text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i><span x-text="tela==='tecnico'?'Chamados recebidos':'Seus envios'"></span></h3>
+    <p x-show="!lista.length" class="text-xs text-slate-400">Nada por aqui ainda.</p>
+    <div class="space-y-3 max-h-96 overflow-y-auto">
+      <template x-for="m in lista" :key="m.id||m.created_at">
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+          <div class="flex justify-between text-[10px] text-slate-400">
+            <span class="font-bold" :style="'color:'+cfg.cor" x-text="m.sender"></span>
+            <span x-text="hora(m)"></span>
+          </div>
+          <template x-if="tipo(m)==='text'"><div><p class="text-xs text-slate-200" x-text="m.content"></p>
+            <a x-show="link2(m)" :href="link2(m)" target="_blank" rel="noopener" class="text-xs underline" :style="'color:'+cfg.cor">Entrar na chamada</a></div></template>
+          <template x-if="tipo(m)==='image'"><img :src="m.content" class="rounded-lg max-h-40 object-cover" @click="window.open(m.content,'_blank')"></template>
+          <template x-if="tipo(m)==='video'"><video :src="m.content" controls class="rounded-lg max-h-48 w-full"></video></template>
+          <template x-if="tipo(m)==='audio'"><audio :src="m.content" controls class="w-full"></audio></template>
         </div>
-        <div class="flex items-center space-x-2">
-            <button @click="alternarPainelAdmin()" class="text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-slate-300 border border-slate-700 flex items-center">
-                <i class="fa-solid fa-gear mr-1"></i> <span x-text="modoAdmin ? 'Ver App' : 'Painel Admin'"></span>
-            </button>
-        </div>
-    </header>
+      </template>
+    </div>
+  </section>
 
-    <main class="max-w-md mx-auto p-4 space-y-4">
+  <p class="text-center" x-show="['inicio','login','cadastro'].includes(tela)">
+    <button class="text-[11px] text-slate-500 underline" @click="erro='';pinIn='';tela='tecLogin'">Sou o técnico</button>
+  </p>
+</main>
 
-        <!-- TELA 1: VISÃO DO CLIENTE -->
-        <div x-show="!modoAdmin" class="space-y-4" x-transition>
-            
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Fale Diretamente Com</span>
-                        <h2 class="text-base font-extrabold text-white" x-text="config.nomeEmpresa"></h2>
-                    </div>
-                    <span class="text-xs px-2 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Canal Direto</span>
-                </div>
-            </div>
-
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
-                <h3 class="font-bold text-sm text-white flex items-center">
-                    <i class="fa-solid fa-message mr-2" :style="'color: ' + config.corPrimaria"></i> Enviar Solicitação / Chamado
-                </h3>
-
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Seu Nome</label>
-                    <input type="text" x-model="cliente.nome" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
-                </div>
-
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Qual Aparelho / Serviço?</label>
-                    <input type="text" x-model="cliente.equipamento" placeholder="Ex: Máquina de Lavar, Geladeira..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
-                </div>
-
-                <div>
-                    <label class="text-xs text-slate-300 font-medium">Descreva o defeito ou dúvida</label>
-                    <textarea x-model="cliente.relato" rows="3" placeholder="O que está acontecendo? (Ex: Vazando água embaixo)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
-                </div>
-
-                <!-- Botão de Anexo de Foto/Vídeo -->
-                <div class="grid grid-cols-2 gap-2 pt-1">
-                    <label class="bg-slate-950 border border-slate-800 hover:border-slate-700 p-2.5 rounded-xl text-center cursor-pointer transition">
-                        <i class="fa-solid fa-camera text-sm block mb-1" :style="'color: ' + config.corPrimaria"></i>
-                        <span class="text-[10px] text-slate-300 font-medium">Enviar Foto / Vídeo</span>
-                        <input type="file" accept="image/*,video/*" class="hidden" @change="enviarArquivoReal($event)">
-                    </label>
-
-                    <button @click="iniciarChamadaVideo()" class="bg-slate-950 border border-slate-800 hover:border-slate-700 p-2.5 rounded-xl text-center transition">
-                        <i class="fa-solid fa-video text-sm block mb-1" :style="'color: ' + config.corPrimaria"></i>
-                        <span class="text-[10px] text-slate-300 font-medium">Chamada Ao Vivo</span>
-                    </button>
-                </div>
-
-                <button @click="enviarSolicitacao()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer" :style="'background-color: ' + config.corPrimaria">
-                    Enviar Mensagem para <span x-text="config.nomeEmpresa"></span>
-                </button>
-            </div>
-
-            <!-- ÁREA DE ORÇAMENTO PRÉVIO GERADO PARA O CLIENTE -->
-            <div x-show="orcamentoSugerido" class="bg-emerald-950/30 border border-emerald-500/40 rounded-2xl p-4 shadow-xl space-y-2">
-                <h3 class="font-bold text-xs uppercase tracking-wider text-emerald-400 flex items-center">
-                    <i class="fa-solid fa-calculator mr-1"></i> Orçamento Prévio Estimado
-                </h3>
-                <p class="text-xs text-slate-300" x-text="orcamentoSugerido"></p>
-                <p class="text-[10px] text-slate-400 italic">* Valores baseados na pré-análise do defeito informado. O técnico combinará o trajeto e a visita posteriormente.</p>
-            </div>
-
-            <!-- HISTÓRICO DE MENSAGENS -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
-                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Histórico do Chat</h3>
-                <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                    <template x-for="msg in mensagens">
-                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                            <div class="flex justify-between text-[10px] text-slate-400">
-                                <span class="font-bold" :style="'color: ' + config.corPrimaria" x-text="msg.sender"></span>
-                                <span x-text="new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
-                            </div>
-                            <p class="text-xs text-slate-200" x-text="msg.content" x-show="msg.type === 'text'"></p>
-                            <template x-if="msg.type === 'image' || msg.type === 'file'">
-                                <img :src="msg.content" class="rounded-lg mt-1 max-h-40 object-cover cursor-pointer" @click="window.open(msg.content, '_blank')">
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- TELA 2: PAINEL ADMIN -->
-        <div x-show="modoAdmin" class="space-y-4" x-transition>
-            
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color: ' + config.corPrimaria"></i> Painel do Técnico</h3>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Admin Ativo</span>
-                </div>
-
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-xs text-slate-300 font-medium">Nome do seu App / Negócio</label>
-                        <input type="text" x-model="configTemp.nomeEmpresa" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-slate-300 font-medium">Cor Principal do Tema (Hex)</label>
-                        <div class="flex space-x-2 mt-1">
-                            <input type="color" x-model="configTemp.corPrimaria" class="w-12 h-10 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer p-1">
-                            <input type="text" x-model="configTemp.corPrimaria" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 text-sm text-white focus:outline-none">
-                        </div>
-                    </div>
-
-                    <div class="pt-2">
-                        <button @click="guardarConfiguracoes()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer" :style="'background-color: ' + configTemp.corPrimaria">
-                            Salvar Configurações
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Secção de Mídias Recebidas dos Clientes -->
-                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-3 mt-4">
-                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-photo-film mr-1"></i> Fotos e Vídeos dos Clientes:</h4>
-                    <div class="space-y-2 max-h-40 overflow-y-auto">
-                        <template x-for="msg in mensagens.filter(m => m.type === 'image' || m.type === 'file')">
-                            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
-                                <div>
-                                    <span class="text-[10px] font-bold text-white" x-text="msg.sender"></span>
-                                    <p class="text-[10px] text-slate-400" x-text="new Date(msg.created_at).toLocaleString()"></p>
-                                </div>
-                                <a :href="msg.content" target="_blank" rel="noopener noreferrer" class="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30">
-                                    Abrir Mídia (R2)
-                                </a>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </main>
-
-    <script>
-        function appData() {
-            return {
-                modoAdmin: false,
-                config: {
-                    nomeEmpresa: 'Técnico Carlos Consertos',
-                    corPrimaria: '#10b981'
-                },
-                configTemp: {},
-                cliente: {
-                    nome: '',
-                    equipamento: '',
-                    relato: ''
-                },
-                orcamentoSugerido: '',
-                mensagens: [],
-
-                initApp() {
-                    this.configTemp = { ...this.config };
-                    this.carregarMensagens();
-                },
-
-                guardarConfiguracoes() {
-                    this.config = { ...this.configTemp };
-                    this.modoAdmin = false;
-                    alert('Configurações atualizadas!');
-                },
-
-                alternarPainelAdmin() {
-                    this.modoAdmin = !this.modoAdmin;
-                    if(this.modoAdmin) this.configTemp = { ...this.config };
-                },
-
-                async carregarMensagens() {
-                    try {
-                        const res = await fetch('/api/messages?room_id=geral');
-                        if(res.ok) this.mensagens = await res.json();
-                    } catch(e) {
-                        console.error("Erro ao carregar mensagens", e);
-                    }
-                },
-
-                async enviarSolicitacao() {
-                    if(!this.cliente.nome || !this.cliente.relato) {
-                        alert('Preencha seu nome e a descrição.');
-                        return;
-                    }
-                    const texto = `[${this.cliente.equipamento || 'Aparelho'}] ${this.cliente.relato}`;
-                    try {
-                        const res = await fetch('/api/messages', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ room_id: 'geral', sender: this.cliente.nome, content: texto, type: 'text' })
-                        });
-                        if(res.ok) {
-                            this.cliente.relato = '';
-                            this.carregarMensagens();
-                            alert('Enviado com sucesso!');
-                        }
-                    } catch(err) {
-                        alert('Erro ao enviar.');
-                    }
-                },
-
-                async enviarArquivoReal(e) {
-                    if(e.target.files.length === 0) return;
-                    const file = e.target.files[0];
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('sender', this.cliente.nome || 'Cliente');
-                    formData.append('room_id', 'geral');
-
-                    try {
-                        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                        const data = await res.json();
-                        if(res.ok) {
-                            alert('Mídia enviada para o R2 com sucesso!');
-                            this.carregarMensagens();
-                        } else {
-                            alert('Erro: ' + data.error);
-                        }
-                    } catch(err) {
-                        alert('Erro de conexão ao enviar arquivo.');
-                    }
-                },
-
-                iniciarChamadaVideo() {
-                    alert('Iniciando ligação de vídeo segura...');
-                }
-            }
-        }
-    </script>
+<script>
+function app(){return{
+  tela:'inicio', slug:new URLSearchParams(location.search).get('t')||'carlos',
+  cfg:{nome:'Técnico Carlos',cor:'#10b981',base:80}, tmp:{},
+  user:null, f:{nome:'',tel:'',senha:''}, c:{produto:'',defeito:''},
+  erro:'', orc:'', msgs:[], pinSessao:'', gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
+  get K(){return 'at_'+this.slug},
+  get temPin(){return !!this.cfg.tem_pin},
+  get sala(){return this.slug+':'+(this.user?.id||'')},
+  get link(){return location.origin+location.pathname+'?t='+(this.tmp.slug||this.slug)},
+  get lista(){return this.msgs},
+  async init(){
+    try{const r=await fetch('/api/tecnico?slug='+this.slug);if(r.ok)Object.assign(this.cfg,await r.json())}catch(e){}
+    this.user=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
+    document.title=this.cfg.nome;
+    this.manifest();
+    window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.ipr=e});
+    if(this.user&&localStorage.getItem(this.K+'_on')){this.tela='app';this.carregar()}
+    else if(this.user)this.tela='login';
+    this.timer=setInterval(()=>{if(['app','tecnico'].includes(this.tela))this.carregar()},8000);
+  },
+  manifest(){
+    const m={name:this.cfg.nome,short_name:this.cfg.nome.slice(0,12),start_url:location.href,display:'standalone',background_color:'#020617',theme_color:this.cfg.cor};
+    let l=document.querySelector('link[rel=manifest]');
+    if(!l){l=document.createElement('link');l.rel='manifest';document.head.appendChild(l)}
+    l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));
+  },
+  criarConta(){
+    const {nome,tel,senha}=this.f;
+    if(!nome.trim()||tel.replace(/\D/g,'').length<10||senha.length<4){this.erro='Preencha nome, WhatsApp com DDD e uma senha de 4 ou mais caracteres.';return}
+    this.erro='';
+    this.user={id:crypto.randomUUID(),nome:nome.trim(),tel:tel.replace(/\D/g,''),senha};
+    localStorage.setItem(this.K+'_user',JSON.stringify(this.user));
+    localStorage.setItem(this.K+'_on','1');
+    this.tela='baixar';
+  },
+  async baixar(){
+    if(this.ipr){this.ipr.prompt();await this.ipr.userChoice;this.tela='app';this.carregar()}
+    else this.ajuda=true;
+  },
+  entrar(){
+    const u=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
+    if(u&&u.tel===this.f.tel.replace(/\D/g,'')&&u.senha===this.f.senha){this.erro='';this.user=u;localStorage.setItem(this.K+'_on','1');this.tela='app';this.carregar()}
+    else this.erro='WhatsApp ou senha incorretos.';
+  },
+  sair(){localStorage.removeItem(this.K+'_on');this.tela='login';this.f.senha=''},
+  async entrarTec(){
+    const pin=this.pinIn.trim();
+    if(!/^\d{4,8}$/.test(pin)){this.erro='O PIN precisa ter de 4 a 8 números.';return}
+    const r=await this.api('/api/tecnico',{slug:this.slug,pin,acao:'login'});
+    if(!r.ok){this.erro=r.status===401?'PIN incorreto.':'Não foi possível entrar. Tente de novo.';return}
+    this.erro='';this.pinSessao=pin;this.pinIn='';this.tmp={...this.cfg,slug:this.slug};this.tela='tecnico';this.carregar();
+  },
+  async api(url,body){try{return await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}catch(e){return {ok:false,status:0}}},
+  async salvarCfg(){
+    const slug=(this.tmp.slug||this.slug).toLowerCase().replace(/[^a-z0-9-]/g,'');
+    const d={slug,pin:this.pinSessao,nome:this.tmp.nome||this.cfg.nome,cor:this.tmp.cor,base:Number(this.tmp.base)||0};
+    const r=await this.api('/api/tecnico',d);
+    if(!r.ok){this.erro='Não foi possível salvar. Confira a conexão e tente de novo.';return}
+    this.cfg={...this.cfg,nome:d.nome,cor:d.cor,base:d.base};
+    if(slug!==this.slug){location.search='?t='+slug;return}
+    this.erro='';document.title=this.cfg.nome;this.manifest();
+  },
+  async carregar(){
+    const tec=this.tela==='tecnico';
+    const u=tec?'/api/messages?slug='+this.slug:'/api/messages?room_id='+encodeURIComponent(this.sala);
+    try{const r=await fetch(u,{headers:tec?{'X-Pin':this.pinSessao}:{}});if(r.ok)this.msgs=await r.json()}catch(e){}
+  },
+  async post(b){
+    try{
+      const r=await fetch('/api/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room_id:this.sala,sender:this.user.nome,...b})});
+      if(!r.ok)throw 0;return true;
+    }catch(e){this.erro='Sem conexão. Tente enviar de novo.';return false}
+  },
+  async enviar(){
+    if(!this.c.produto.trim()||!this.c.defeito.trim()){this.erro='Informe o nome do produto e a descrição do defeito.';return}
+    this.erro='';
+    const ok=await this.post({content:'['+this.c.produto+'] '+this.c.defeito,type:'text'});
+    if(!ok)return;
+    this.orc=await this.estimar();
+    this.c={produto:'',defeito:''};
+    this.carregar();
+  },
+  async estimar(){
+    try{
+      const r=await fetch('/api/orcamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:this.slug,produto:this.c.produto,defeito:this.c.defeito})});
+      if(r.ok){const d=await r.json();if(d.texto)return d.texto}
+    }catch(e){}
+    return 'Visita e diagnóstico a partir de R$ '+this.cfg.base+'. O valor final do reparo é confirmado por '+this.cfg.nome+' depois de analisar o seu pedido.';
+  },
+  async subir(file,nome){
+    const fd=new FormData();fd.append('file',file,nome||file.name);fd.append('sender',this.user.nome);fd.append('room_id',this.sala);fd.append('type',file.type.startsWith('video')?'video':file.type.startsWith('audio')?'audio':'image');
+    try{const r=await fetch('/api/messages',{method:'POST',body:fd});if(!r.ok)throw 0;this.erro='';this.carregar()}
+    catch(e){this.erro='Não foi possível enviar o arquivo. Tente de novo.'}
+  },
+  arquivo(e){const f=e.target.files[0];if(f)this.subir(f);e.target.value=''},
+  async gravar(){
+    if(this.gravando){this.rec.stop();return}
+    try{
+      const s=await navigator.mediaDevices.getUserMedia({audio:true});
+      this.rec=new MediaRecorder(s);this.chunks=[];
+      this.rec.ondataavailable=e=>this.chunks.push(e.data);
+      this.rec.onstop=()=>{
+        s.getTracks().forEach(t=>t.stop());this.gravando=false;
+        const mt=this.rec.mimeType||'audio/webm';
+        this.subir(new Blob(this.chunks,{type:mt}),'audio-'+Date.now()+(mt.includes('mp4')?'.m4a':'.webm'));
+      };
+      this.rec.start();this.gravando=true;
+    }catch(e){this.erro='Permita o uso do microfone para gravar áudio.'}
+  },
+  async chamada(){
+    const url='https://meet.jit.si/'+this.slug+'-'+this.user.id;
+    await this.post({content:'Chamada de vídeo: '+url,type:'text'});
+    window.open(url,'_blank');this.carregar();
+  },
+  hora(m){return new Date(String(m.created_at).replace(' ','T')+'Z').toLocaleString([],{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})},
+  tipo(m){
+    if(m.type==='text')return 'text';
+    if(['image','video','audio'].includes(m.type))return m.type;
+    const u=(m.content||'').toLowerCase();
+    if(/audio|\.(m4a|mp3|ogg|wav)/.test(u))return 'audio';
+    if(/\.(mp4|mov|webm|3gp)/.test(u))return 'video';
+    return 'image';
+  },
+  link2(m){const x=/https?:\/\/\S+/.exec(m.content||'');return x?x[0]:''}
+}}
+</script>
 </body>
 </html>
