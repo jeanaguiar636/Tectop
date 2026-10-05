@@ -1,91 +1,119 @@
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tectop - Chat Técnico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 h-screen flex flex-col justify-between">
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
+    <!-- Cabeçalho -->
+    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-lg font-bold"><i class="fa-solid fa-helmet-safety mr-2"></i>Tectop Chat</h1>
+        <span id="room-badge" class="text-xs bg-blue-500 px-2 py-1 rounded-full">Sala: Geral</span>
+    </header>
 
-    try {
-      // Listar mensagens de uma sala
-      if (url.pathname === "/api/messages" && request.method === "GET") {
-        const roomId = url.searchParams.get("room_id") || "geral";
-        const { results } = await env.DB.prepare(
-          "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC"
-        ).bind(roomId).all();
+    <!-- Corpo das Mensagens -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+        <!-- As mensagens aparecem aqui dinamicamente -->
+    </main>
+
+    <!-- Barra de Envio -->
+    <footer class="bg-white border-t p-3 flex items-center space-x-2">
+        <input type="text" id="sender-input" placeholder="O seu nome" class="border rounded-lg px-2 py-2 text-sm w-1/4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" id="message-input" placeholder="Escreva uma mensagem..." class="border rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
         
-        return new Response(JSON.stringify(results), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
+        <label class="cursor-pointer bg-gray-200 hover:bg-gray-300 p-2 rounded-lg text-gray-700">
+            <i class="fa-solid fa-paperclip"></i>
+            <input type="file" id="file-input" class="hidden" onchange="sendFile()">
+        </label>
 
-      // Enviar nova mensagem ou ficheiro de mídia
-      if (url.pathname === "/api/messages" && request.method === "POST") {
-        const contentType = request.headers.get("content-type") || "";
-        let roomId, sender, content, type = "text";
+        <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+    </footer>
 
-        if (contentType.includes("multipart/form-data")) {
-          const formData = await request.formData();
-          roomId = formData.get("room_id") || "geral";
-          sender = formData.get("sender") || "Técnico";
-          const file = formData.get("file");
+    <script>
+        const API_URL = window.location.origin;
+        const currentRoom = "geral";
 
-          if (file) {
-            const fileName = `${Date.now()}-${file.name}`;
-            await env.MEDIA_BUCKET.put(fileName, file.stream(), {
-              httpMetadata: { contentType: file.type }
+        async function fetchMessages() {
+            try {
+                const res = await fetch(`${API_URL}/api/messages?room_id=${currentRoom}`);
+                if (!res.ok) return;
+                const messages = await res.json();
+                const container = document.getElementById("chat-container");
+                container.innerHTML = "";
+
+                if (Array.isArray(messages)) {
+                    messages.forEach(msg => {
+                        const div = document.createElement("div");
+                        div.className = "flex flex-col bg-white p-3 rounded-lg shadow-sm max-w-[80%]";
+                        
+                        let contentHtml = `<p class="text-sm text-gray-800">${escapeHtml(msg.content || '')}</p>`;
+                        if (msg.type === "image") {
+                            contentHtml = `<img src="${API_URL}/api/media/${msg.content}" class="rounded-lg mt-1 max-h-48 object-cover">`;
+                        }
+
+                        div.innerHTML = `
+                            <span class="text-xs font-bold text-blue-600 mb-1">${escapeHtml(msg.sender || 'Anónimo')}</span>
+                            ${contentHtml}
+                            <span class="text-[10px] text-gray-400 mt-1 text-right">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                        `;
+                        container.appendChild(div);
+                    });
+                    container.scrollTop = container.scrollHeight;
+                }
+            } catch (err) {
+                console.error("Erro ao carregar mensagens:", err);
+            }
+        }
+
+        async function sendMessage() {
+            const sender = document.getElementById("sender-input").value.trim() || "Técnico Anónimo";
+            const content = document.getElementById("message-input").value.trim();
+            if (!content) return;
+
+            await fetch(`${API_URL}/api/messages`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ room_id: currentRoom, sender, content, type: "text" })
             });
-            content = fileName;
-            type = file.type.startsWith("image/") ? "image" : "file";
-          } else {
-            content = formData.get("content") || "";
-          }
-        } else {
-          const body = await request.json();
-          roomId = body.room_id || "geral";
-          sender = body.sender || "Técnico";
-          content = body.content || "";
-          type = body.type || "text";
+
+            document.getElementById("message-input").value = "";
+            fetchMessages();
         }
 
-        const id = "msg_" + Date.now() + Math.random().toString(36.substring(2, 7));
-        
-        await env.DB.prepare(
-          "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
-        ).bind(id, roomId, sender, content, type).run();
+        async function sendFile() {
+            const fileInput = document.getElementById("file-input");
+            if (fileInput.files.length === 0) return;
 
-        return new Response(JSON.stringify({ success: true, id }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
+            const sender = document.getElementById("sender-input").value.trim() || "Técnico Anónimo";
+            const file = fileInput.files[0];
 
-      // Servir ficheiros guardados no R2
-      if (url.pathname.startsWith("/api/media/")) {
-        const fileName = url.pathname.replace("/api/media/", "");
-        const object = await env.MEDIA_BUCKET.get(fileName);
+            const formData = new FormData();
+            formData.append("room_id", currentRoom);
+            formData.append("sender", sender);
+            formData.append("file", file);
 
-        if (!object) {
-          return new Response("Ficheiro não encontrado", { status: 404, headers: corsHeaders });
+            await fetch(`${API_URL}/api/messages`, {
+                method: "POST",
+                body: formData
+            });
+
+            fileInput.value = "";
+            fetchMessages();
         }
 
-        const headers = new Headers(corsHeaders);
-        object.writeHttpMetadata(headers);
-        headers.set("etag", object.httpEtag);
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
 
-        return new Response(object.body, { headers });
-      }
-
-      return new Response("Endpoint não encontrado", { status: 404, headers: corsHeaders });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-  }
-};
+        setInterval(fetchMessages, 3000);
+        fetchMessages();
+    </script>
+</body>
+</html>
