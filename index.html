@@ -8,6 +8,11 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <meta name="theme-color" content="#020617">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style type="text/tailwindcss">
   [x-cloak]{display:none!important}
   .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3}
@@ -37,6 +42,7 @@
 
   <!-- 1. Página inicial do link do técnico -->
   <section x-show="tela==='inicio'" class="card text-center">
+    <img src="/icon-192.png" alt="" class="w-24 h-24 mx-auto rounded-[1.6rem] shadow-lg shadow-emerald-500/20">
     <h2 class="text-lg font-extrabold text-white">Atendimento de <span x-text="cfg.nome"></span></h2>
     <p class="text-sm text-slate-300">Mande uma foto do defeito e receba um pré-orçamento na hora.</p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="erro='';tela=user?'login':'cadastro'">Baixar aplicativo</button>
@@ -54,6 +60,7 @@
 
   <!-- 3. Baixar (única opção depois de criar a conta) -->
   <section x-show="tela==='baixar'" class="card text-center">
+    <img src="/icon-192.png" alt="" class="w-20 h-20 mx-auto rounded-3xl">
     <h2 class="font-bold text-white">Conta criada!</h2>
     <p class="text-sm text-slate-300">Baixe o aplicativo de <span x-text="cfg.nome"></span> para continuar.</p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="baixar()">Baixar aplicativo</button>
@@ -62,6 +69,13 @@
       <p>iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início". Android: menu do navegador e "Instalar app".</p>
       <button class="mini w-full" @click="ajuda=false;tela='app';carregar()">Já instalei, continuar</button>
     </div>
+  </section>
+
+  <section x-show="tela==='instalado'" class="card text-center">
+    <img src="/icon-192.png" alt="" class="w-20 h-20 mx-auto rounded-3xl">
+    <h2 class="font-bold text-white">App instalado!</h2>
+    <p class="text-sm text-slate-300">Procure o ícone de <span x-text="cfg.nome"></span> na tela inicial do celular e abra por ele.</p>
+    <button class="mini w-full" @click="tela='app';carregar()">Continuar aqui mesmo</button>
   </section>
 
   <!-- 4. Login (volta ao app) -->
@@ -75,7 +89,8 @@
 
   <!-- 5. App do cliente -->
   <section x-show="tela==='app'" class="space-y-4">
-    <div class="card">
+    <p x-show="bloqueado" class="text-xs text-yellow-200 bg-yellow-950/40 border border-yellow-800 rounded-xl p-3">Este atendimento está indisponível no momento. Tente novamente mais tarde.</p>
+    <div class="card" :class="bloqueado?'opacity-40 pointer-events-none':''">
       <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-message mr-2" :style="'color:'+cfg.cor"></i>Pedir pré-orçamento</h3>
       <div><label class="lbl">Nome do produto</label><input class="inp" x-model="c.produto" placeholder="Ex: Geladeira, moto, celular"></div>
       <div><label class="lbl">Descrição do defeito</label><textarea class="inp" rows="3" x-model="c.defeito" placeholder="O que está acontecendo?"></textarea></div>
@@ -107,6 +122,15 @@
     <h2 class="font-bold text-white" x-text="temPin?'Entrar como técnico':'Crie seu PIN de técnico'"></h2>
     <input class="inp" type="password" inputmode="numeric" x-model="pinIn" placeholder="PIN (4 a 8 números)">
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrarTec()" x-text="temPin?'Entrar':'Criar PIN'"></button>
+  </section>
+
+  <section x-show="tela==='tecnico'" class="card">
+    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-crown mr-2 text-yellow-400"></i>Sua assinatura</h3>
+    <p class="text-xs text-slate-300" x-text="textoPlano"></p>
+    <div x-show="plano.status!=='ativo'" class="space-y-2">
+      <input class="inp" type="email" x-model="email" placeholder="Seu e-mail (usado no Mercado Pago)">
+      <button class="btn" :style="'background-color:'+cfg.cor" @click="assinar()">Assinar por R$ 18/mês</button>
+    </div>
   </section>
 
   <section x-show="tela==='tecnico'" class="card">
@@ -165,9 +189,17 @@ function app(){return{
   tela:'inicio', slug:new URLSearchParams(location.search).get('t')||'carlos',
   cfg:{nome:'Técnico Carlos',cor:'#10b981',base:80}, tmp:{},
   user:null, f:{nome:'',tel:'',senha:''}, c:{produto:'',defeito:''},
-  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
+  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
   get K(){return 'at_'+this.slug},
   get temPin(){return !!this.cfg.tem_pin},
+  get bloqueado(){return this.cfg.ativo===false},
+  get textoPlano(){
+    const p=this.plano;
+    if(p.status==='ativo')return 'Assinatura ativa. Obrigado por usar o Tectop!';
+    if(p.status==='suspenso')return 'Assinatura suspensa. Assine para voltar a atender seus clientes.';
+    if(p.fim){const d=Math.ceil((p.fim-Date.now())/86400000);return d>0?'Teste grátis: faltam '+d+(d===1?' dia.':' dias.'):'Seu teste grátis terminou. Assine para continuar atendendo.'}
+    return 'Teste grátis ativo.';
+  },
   get sala(){return this.slug+':'+(this.user?.id||'')},
   get link(){return location.origin+location.pathname+'?t='+(this.tmp.slug||this.slug)},
   get lista(){return this.msgs},
@@ -177,17 +209,19 @@ function app(){return{
     this.registrar();
     document.title=this.cfg.nome;
     this.manifest();
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    window.addEventListener('appinstalled',()=>{if(['inicio','cadastro','baixar','login'].includes(this.tela))this.tela='instalado'});
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.ipr=e});
     if(this.user&&localStorage.getItem(this.K+'_on')){this.tela='app';this.carregar()}
     else if(this.user)this.tela='login';
+    if(location.hash==='#painel')this.tela='tecLogin';
     this.timer=setInterval(()=>{if(['app','tecnico'].includes(this.tela))this.carregar()},8000);
     setInterval(()=>this.checarToques(),3000);
   },
   manifest(){
-    const m={name:this.cfg.nome,short_name:this.cfg.nome.slice(0,12),start_url:location.href,display:'standalone',background_color:'#020617',theme_color:this.cfg.cor};
     let l=document.querySelector('link[rel=manifest]');
     if(!l){l=document.createElement('link');l.rel='manifest';document.head.appendChild(l)}
-    l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));
+    l.href='/api/manifest?t='+this.slug;
   },
   criarConta(){
     const {nome,tel,senha}=this.f;
@@ -200,8 +234,10 @@ function app(){return{
     this.tela='baixar';
   },
   async baixar(){
-    if(this.ipr){this.ipr.prompt();await this.ipr.userChoice;this.tela='app';this.carregar()}
-    else this.ajuda=true;
+    if(this.ipr){
+      this.ipr.prompt();const c=await this.ipr.userChoice;this.ipr=null;
+      if(c.outcome==='accepted')this.tela='instalado';
+    }else this.ajuda=true;
   },
   entrar(){
     const u=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
@@ -214,9 +250,15 @@ function app(){return{
     if(!/^\d{4,8}$/.test(pin)){this.erro='O PIN precisa ter de 4 a 8 números.';return}
     const r=await this.api('/api/tecnico',{slug:this.slug,pin,acao:'login'});
     if(!r.ok){this.erro=r.status===401?'PIN incorreto.':'Não foi possível entrar. Tente de novo.';return}
+    try{this.plano=await r.json()}catch(e){}
     this.erro='';this.pinSessao=pin;this.pinIn='';this.tmp={...this.cfg,slug:this.slug};this.tela='tecnico';this.carregar();
   },
   async api(url,body){try{return await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Pin':this.pinSessao},body:JSON.stringify(body)})}catch(e){return {ok:false,status:0}}},
+  async assinar(){
+    const r=await this.api('/api/assinar',{slug:this.slug,email:this.email});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.url)location.href=d.url;else this.erro=d.error||'Não foi possível abrir o pagamento.';
+  },
   registrar(){if(this.user)this.api('/api/cliente',{slug:this.slug,id:this.user.id,nome:this.user.nome,tel:this.user.tel})},
   async apagar(m){
     if(!confirm('Apagar esta mensagem? Não dá para desfazer.'))return;
