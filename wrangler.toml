@@ -1,6 +1,6 @@
-name = "tectop"
+name = "tectop-app"
 main = "worker.js"
-compatibility_date = "2026-10-04"
+compatibility_date = "2026-01-01"
 
 [site]
 bucket = "./"
@@ -8,8 +8,8 @@ bucket = "./"
 [[d1_databases]]
 binding = "DB"
 database_name = "tectop-db"
-database_id = "tectop-db"
+database_id = "COLOQUE_O_ID_DO_SEU_D1_AQUI"
 
 [[r2_buckets]]
-binding = "MEDIA_BUCKET"
-bucket_name = "tectop-media-bucket"
+binding = "MEU_BUCKET"
+bucket_name = "tectop-bucket-midias"
