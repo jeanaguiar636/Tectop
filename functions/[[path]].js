@@ -21,6 +21,10 @@ async function preparar(db) {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS tecnicos (
     slug TEXT PRIMARY KEY, nome TEXT, cor TEXT, base INTEGER, pin_hash TEXT)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS calls (
+    id TEXT PRIMARY KEY, room_id TEXT, sender TEXT, status TEXT, criado INTEGER)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS sinais (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, de TEXT, tipo TEXT, dados TEXT)`).run();
   pronto = true;
 }
 
@@ -75,6 +79,52 @@ export async function onRequest(context) {
       await env.DB.prepare("UPDATE tecnicos SET nome = ?, cor = ?, base = ? WHERE slug = ?")
         .bind(nome, cor, base, slug).run();
       return json({ ok: true });
+    }
+
+    // ---- Chamada de vídeo: só sinalização (o vídeo vai direto entre os celulares) ----
+    if (url.pathname === "/api/call" && request.method === "GET") {
+      const slug = url.searchParams.get("slug");
+      if (slug) {
+        if (!(await pinConfere(env, slug, request.headers.get("X-Pin")))) return json({ error: "Não autorizado" }, 401);
+        const { results } = await env.DB.prepare(
+          "SELECT id, sender FROM calls WHERE status = 'ringing' AND criado > ? AND room_id LIKE ? ORDER BY criado DESC"
+        ).bind(Date.now() - 45000, slug + ":%").all();
+        return json(results);
+      }
+      const id = url.searchParams.get("id") || "";
+      const de = url.searchParams.get("de") === "t" ? "t" : "c";
+      const apos = Number(url.searchParams.get("apos")) || 0;
+      const { results } = await env.DB.prepare(
+        "SELECT id, tipo, dados FROM sinais WHERE call_id = ? AND de = ? AND id > ? ORDER BY id ASC LIMIT 50"
+      ).bind(id, de, apos).all();
+      return json({ sinais: results });
+    }
+
+    if (url.pathname === "/api/call" && request.method === "POST") {
+      const d = await request.json();
+      if (d.acao === "ligar") {
+        if (!d.room_id) throw new Error("Informe a sala");
+        const id = crypto.randomUUID();
+        await env.DB.prepare("INSERT INTO calls (id, room_id, sender, status, criado) VALUES (?, ?, ?, 'ringing', ?)")
+          .bind(id, String(d.room_id).slice(0, 100), String(d.sender || "Cliente").slice(0, 60), Date.now()).run();
+        return json({ id });
+      }
+      if (d.acao === "sinal") {
+        const call = await env.DB.prepare("SELECT room_id FROM calls WHERE id = ?").bind(String(d.id || "")).first();
+        if (!call) return json({ error: "Chamada não encontrada" }, 404);
+        const de = d.de === "t" ? "t" : "c";
+        if (de === "t" && !(await pinConfere(env, call.room_id.split(":")[0], request.headers.get("X-Pin")))) {
+          return json({ error: "Não autorizado" }, 401);
+        }
+        const tipo = ["offer", "answer", "ice", "fim"].includes(d.tipo) ? d.tipo : null;
+        if (!tipo) throw new Error("Tipo inválido");
+        await env.DB.prepare("INSERT INTO sinais (call_id, de, tipo, dados) VALUES (?, ?, ?, ?)")
+          .bind(d.id, de, tipo, String(d.dados || "").slice(0, 20000)).run();
+        if (tipo === "answer") await env.DB.prepare("UPDATE calls SET status = 'ativa' WHERE id = ?").bind(d.id).run();
+        if (tipo === "fim") await env.DB.prepare("UPDATE calls SET status = 'fim' WHERE id = ?").bind(d.id).run();
+        return json({ ok: true });
+      }
+      throw new Error("Ação inválida");
     }
 
     // ---- Mensagens: ler ----
