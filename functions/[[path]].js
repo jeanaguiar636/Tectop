@@ -1,124 +1,153 @@
+// Cloudflare Pages Function: roda antes do site e atende tudo que começa com /api/
+// Bindings usados: env.DB (D1) e env.MEDIA_BUCKET (R2)
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Pin",
+};
+
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...cors },
+  });
+
+let pronto = false;
+async function preparar(db) {
+  if (pronto) return;
+  await db.prepare(`CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY, room_id TEXT, sender TEXT, content TEXT, type TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS tecnicos (
+    slug TEXT PRIMARY KEY, nome TEXT, cor TEXT, base INTEGER, pin_hash TEXT)`).run();
+  pronto = true;
+}
+
+async function hashPin(slug, pin) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(slug + ":" + pin));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function pinConfere(env, slug, pin) {
+  if (!/^[a-z0-9-]{2,30}$/.test(slug || "") || !/^\d{4,8}$/.test(pin || "")) return false;
+  const row = await env.DB.prepare("SELECT pin_hash FROM tecnicos WHERE slug = ?").bind(slug).first();
+  return !!row && row.pin_hash === (await hashPin(slug, pin));
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // Permite acesso de qualquer origem para evitar bloqueios de CORS
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (!url.pathname.startsWith("/api/")) return context.next();
 
   try {
-    // Intercepta apenas os pedidos que começam com /api/
-    if (url.pathname.startsWith("/api/")) {
-      
-      // Garante que a tabela existe
-      await env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS messages (
-          id TEXT PRIMARY KEY,
-          room_id TEXT,
-          sender TEXT,
-          content TEXT,
-          type TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
+    await preparar(env.DB);
 
-      // ROTA GET: Carregar mensagens
-      if (url.pathname === "/api/messages" && request.method === "GET") {
-        const roomId = url.searchParams.get("room_id") || "geral";
-        const { results } = await env.DB.prepare(
-          "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC LIMIT 100"
-        ).bind(roomId).all();
-
-        return new Response(JSON.stringify(results), {
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
-      }
-
-      // ROTA POST: Enviar mensagem (Texto ou Ficheiro)
-      if (url.pathname === "/api/messages" && request.method === "POST") {
-        const contentType = request.headers.get("content-type") || "";
-
-        if (contentType.includes("application/json")) {
-          const data = await request.json();
-          if (!data.content || data.content.trim() === "") {
-            throw new Error("A mensagem não pode estar vazia");
-          }
-
-          const id = crypto.randomUUID();
-          await env.DB.prepare(
-            "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
-          ).bind(id, data.room_id || "geral", data.sender || "Anónimo", data.content, data.type || "text").run();
-
-          return new Response(JSON.stringify({ success: true }), {
-            headers: { "Content-Type": "application/json", ...corsHeaders }
-          });
-        }
-
-        if (contentType.includes("multipart/form-data")) {
-          const formData = await request.formData();
-          const file = formData.get("file");
-          const sender = formData.get("sender") || "Anónimo";
-          const roomId = formData.get("room_id") || "geral";
-          const type = formData.get("type") || "image";
-
-          if (!file) {
-            throw new Error("Nenhum ficheiro foi enviado");
-          }
-
-          const fileName = `uploads/${Date.now()}_${file.name}`;
-          
-          await env.MEDIA_BUCKET.put(fileName, file.stream(), {
-            httpMetadata: { contentType: file.type }
-          });
-
-          const fileUrl = `${url.origin}/api/files/${fileName}`;
-          const id = crypto.randomUUID();
-
-          await env.DB.prepare(
-            "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
-          ).bind(id, roomId, sender, fileUrl, type).run();
-
-          return new Response(JSON.stringify({ success: true, url: fileUrl }), {
-            headers: { "Content-Type": "application/json", ...corsHeaders }
-          });
-        }
-
-        throw new Error("Content-Type não suportado");
-      }
-
-      // ROTA GET: Servir ficheiros guardados no R2
-      if (url.pathname.startsWith("/api/files/")) {
-        const key = url.pathname.replace("/api/files/", "");
-        const object = await env.MEDIA_BUCKET.get(key);
-
-        if (!object) {
-          return new Response("Ficheiro não encontrado", { status: 404, headers: corsHeaders });
-        }
-
-        const headers = new Headers(corsHeaders);
-        object.writeHttpMetadata(headers);
-        headers.set("etag", object.httpEtag);
-
-        return new Response(object.body, { headers });
-      }
-
-      return new Response("Rota da API não encontrada", { status: 404, headers: corsHeaders });
+    // ---- Técnico: ler configuração pública ----
+    if (url.pathname === "/api/tecnico" && request.method === "GET") {
+      const slug = url.searchParams.get("slug") || "";
+      const row = await env.DB.prepare("SELECT nome, cor, base FROM tecnicos WHERE slug = ?").bind(slug).first();
+      return json(row ? { ...row, tem_pin: true } : { tem_pin: false });
     }
 
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders }
-    });
-  }
+    // ---- Técnico: entrar / criar / salvar (o primeiro PIN registra o código) ----
+    if (url.pathname === "/api/tecnico" && request.method === "POST") {
+      const d = await request.json();
+      const slug = String(d.slug || "");
+      const pin = String(d.pin || "");
+      if (!/^[a-z0-9-]{2,30}$/.test(slug)) return json({ error: "Código de link inválido" }, 400);
+      if (!/^\d{4,8}$/.test(pin)) return json({ error: "PIN inválido" }, 400);
 
-  // Deixa o Cloudflare Pages carregar o site principal (index.html) normalmente
-  return context.next();
+      const row = await env.DB.prepare("SELECT pin_hash FROM tecnicos WHERE slug = ?").bind(slug).first();
+      const h = await hashPin(slug, pin);
+      if (!row) {
+        await env.DB.prepare("INSERT INTO tecnicos (slug, pin_hash) VALUES (?, ?)").bind(slug, h).run();
+      } else if (row.pin_hash !== h) {
+        return json({ error: "PIN incorreto" }, 401);
+      }
+      if (d.acao === "login") return json({ ok: true });
+
+      const nome = String(d.nome || "").trim().slice(0, 60) || "Técnico";
+      const cor = /^#[0-9a-f]{6}$/i.test(d.cor || "") ? d.cor : "#10b981";
+      const base = Math.max(0, Math.min(100000, Number(d.base) || 0));
+      await env.DB.prepare("UPDATE tecnicos SET nome = ?, cor = ?, base = ? WHERE slug = ?")
+        .bind(nome, cor, base, slug).run();
+      return json({ ok: true });
+    }
+
+    // ---- Mensagens: ler ----
+    if (url.pathname === "/api/messages" && request.method === "GET") {
+      const slug = url.searchParams.get("slug");
+      if (slug) {
+        // Visão do técnico: todas as salas dele, só com PIN
+        if (!(await pinConfere(env, slug, request.headers.get("X-Pin")))) return json({ error: "Não autorizado" }, 401);
+        const { results } = await env.DB.prepare(
+          "SELECT * FROM messages WHERE room_id LIKE ? ORDER BY created_at DESC LIMIT 200"
+        ).bind(slug + ":%").all();
+        return json(results);
+      }
+      const roomId = url.searchParams.get("room_id") || "";
+      if (!roomId) return json({ error: "Informe a sala" }, 400);
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at DESC LIMIT 100"
+      ).bind(roomId).all();
+      return json(results);
+    }
+
+    // ---- Mensagens: enviar texto (JSON) ou arquivo (multipart) ----
+    if (url.pathname === "/api/messages" && request.method === "POST") {
+      const contentType = request.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const d = await request.json();
+        const content = String(d.content || "").trim();
+        if (!content) throw new Error("A mensagem não pode estar vazia");
+        if (!d.room_id) throw new Error("Informe a sala");
+        await env.DB.prepare(
+          "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, 'text')"
+        ).bind(crypto.randomUUID(), String(d.room_id).slice(0, 100), String(d.sender || "Cliente").slice(0, 60), content.slice(0, 2000)).run();
+        return json({ success: true });
+      }
+
+      if (contentType.includes("multipart/form-data")) {
+        const form = await request.formData();
+        const file = form.get("file");
+        const roomId = String(form.get("room_id") || "");
+        if (!file || !roomId) throw new Error("Arquivo ou sala ausente");
+        if (file.size > 50 * 1024 * 1024) throw new Error("Arquivo maior que 50 MB");
+
+        const tipos = ["image", "video", "audio"];
+        const pedido = String(form.get("type") || "");
+        const type = tipos.includes(pedido) ? pedido : "image";
+        const nomeSeguro = String(file.name || "arquivo").replace(/[^\w.-]/g, "_").slice(-60);
+        const key = `uploads/${Date.now()}_${crypto.randomUUID().slice(0, 8)}_${nomeSeguro}`;
+
+        await env.MEDIA_BUCKET.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+        const fileUrl = `${url.origin}/api/files/${key}`;
+        await env.DB.prepare(
+          "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
+        ).bind(crypto.randomUUID(), roomId.slice(0, 100), String(form.get("sender") || "Cliente").slice(0, 60), fileUrl, type).run();
+        return json({ success: true, url: fileUrl });
+      }
+
+      throw new Error("Content-Type não suportado");
+    }
+
+    // ---- Arquivos do R2 ----
+    if (url.pathname.startsWith("/api/files/")) {
+      const key = decodeURIComponent(url.pathname.replace("/api/files/", ""));
+      const object = await env.MEDIA_BUCKET.get(key);
+      if (!object) return new Response("Arquivo não encontrado", { status: 404, headers: cors });
+      const headers = new Headers(cors);
+      object.writeHttpMetadata(headers);
+      headers.set("etag", object.httpEtag);
+      return new Response(object.body, { headers });
+    }
+
+    return new Response("Rota da API não encontrada", { status: 404, headers: cors });
+  } catch (err) {
+    return json({ error: err.message }, 500);
+  }
 }
