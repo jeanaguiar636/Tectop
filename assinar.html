@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tectop · Seu app de atendimento técnico</title>
+<meta name="description" content="Crie o app de atendimento da sua assistência técnica. 4 dias grátis, depois R$ 18 por mês.">
+<meta name="theme-color" content="#020617">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style type="text/tailwindcss">
+  [x-cloak]{display:none!important}
+  .inp{@apply w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased" x-data="pagina()" x-cloak>
+<main class="max-w-md mx-auto px-4 pb-16">
+
+  <header class="pt-8 pb-6 text-center space-y-4">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center text-2xl"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <h1 class="text-3xl font-extrabold leading-tight">Seu próprio app de <span class="text-emerald-400">atendimento técnico</span></h1>
+    <p class="text-slate-300 text-sm">O cliente manda a foto do defeito, você recebe tudo organizado e responde por chamada de vídeo. Com o nome da sua empresa e o seu link.</p>
+    <a href="#criar" class="inline-block bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-xl">Começar 4 dias grátis</a>
+    <p class="text-xs text-slate-400">Sem cartão para testar</p>
+  </header>
+
+  <section class="space-y-3 py-4">
+    <h2 class="font-extrabold text-lg">O que você ganha</h2>
+    <template x-for="b in beneficios">
+      <div class="flex items-start space-x-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="w-9 h-9 shrink-0 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center"><i class="fa-solid" :class="b.i"></i></div>
+        <div><p class="font-bold text-sm" x-text="b.t"></p><p class="text-xs text-slate-400 mt-0.5" x-text="b.d"></p></div>
+      </div>
+    </template>
+  </section>
+
+  <section class="py-4">
+    <div class="rounded-3xl border border-emerald-500/40 bg-emerald-950/30 p-6 text-center space-y-2">
+      <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Plano único</p>
+      <p class="text-5xl font-extrabold">R$ 18<span class="text-base font-medium text-slate-300">/mês</span></p>
+      <p class="text-sm text-slate-200">4 dias grátis para testar com seus clientes</p>
+      <p class="text-xs text-slate-400">Depois você assina pelo Mercado Pago. Cancele quando quiser.</p>
+    </div>
+  </section>
+
+  <section class="py-4 space-y-3">
+    <h2 class="font-extrabold text-lg">Como começa</h2>
+    <ol class="space-y-2 text-sm text-slate-300">
+      <li><span class="text-emerald-400 font-bold">1.</span> Crie seu app abaixo, em menos de um minuto.</li>
+      <li><span class="text-emerald-400 font-bold">2.</span> Mande o seu link para os clientes pelo WhatsApp.</li>
+      <li><span class="text-emerald-400 font-bold">3.</span> Receba os pedidos e atenda pelo painel.</li>
+    </ol>
+  </section>
+
+  <section id="criar" class="py-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
+      <h2 class="font-extrabold text-lg">Criar meu app</h2>
+      <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
+      <div><label class="text-xs text-slate-300">Nome da sua empresa</label>
+        <input class="inp" x-model="f.nome" placeholder="Ex: Carlos Refrigeração" @input="sugerir()"></div>
+      <div><label class="text-xs text-slate-300">Código do seu link</label>
+        <input class="inp" x-model="f.slug" placeholder="ex: carlos-refrigeracao" autocapitalize="none" @input="editouSlug=true">
+        <p class="text-[11px] text-slate-400 mt-1 break-all">Seu link: <span x-text="origem+'/?t='+(f.slug||'seu-codigo')"></span></p></div>
+      <div><label class="text-xs text-slate-300">Crie um PIN de 4 a 8 números</label>
+        <input class="inp" type="password" inputmode="numeric" x-model="f.pin" placeholder="Para entrar no seu painel"></div>
+      <button @click="criar()" :disabled="enviando" class="w-full bg-emerald-500 text-slate-950 font-bold py-3.5 rounded-xl disabled:opacity-60" x-text="enviando?'Criando...':'Criar meu app e testar grátis'"></button>
+      <p class="text-[11px] text-slate-500 text-center">Guarde o seu PIN. Ele é a chave do seu painel.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+function pagina(){return{
+  origem:location.origin, erro:'', enviando:false, f:{nome:'',slug:'',pin:''}, editouSlug:false,
+  beneficios:[
+    {i:'fa-mobile-screen',t:'App com o seu nome e a sua cor',d:'O cliente instala no celular, sem loja de aplicativos.'},
+    {i:'fa-link',t:'Link próprio para o WhatsApp',d:'Cada cliente que abre o seu link vê só a sua empresa.'},
+    {i:'fa-camera',t:'Foto, vídeo, áudio e texto do defeito',d:'Você entende o problema antes de sair de casa.'},
+    {i:'fa-calculator',t:'Pré-orçamento automático',d:'O cliente já vê uma estimativa com o seu valor de visita.'},
+    {i:'fa-video',t:'Chamada de vídeo dentro do app',d:'Atenda ao vivo, sem depender de outros aplicativos.'},
+    {i:'fa-inbox',t:'Todos os chamados em um painel',d:'Receba, acompanhe e apague o que não precisa mais.'},
+    {i:'fa-toolbox',t:'Para qualquer tipo de técnico',d:'Eletrônicos, mecânica, refrigeração, elétrica e mais.'}
+  ],
+  sugerir(){
+    if(this.editouSlug)return;
+    this.f.slug=this.f.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
+  },
+  async criar(){
+    const slug=this.f.slug.trim().toLowerCase();
+    if(this.f.nome.trim().length<2){this.erro='Informe o nome da sua empresa.';return}
+    if(!/^[a-z0-9-]{2,30}$/.test(slug)){this.erro='O código do link só pode ter letras minúsculas, números e hífen (2 a 30 caracteres).';return}
+    if(!/^\d{4,8}$/.test(this.f.pin)){this.erro='O PIN precisa ter de 4 a 8 números.';return}
+    this.erro='';this.enviando=true;
+    try{
+      const r=await fetch('/api/tecnico',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'criar',slug,pin:this.f.pin,nome:this.f.nome.trim(),cor:'#10b981',base:0})});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok){location.href='/?t='+slug+'#painel';return}
+      this.erro=r.status===409?'Esse código de link já está em uso. Escolha outro.':(d.error||'Não foi possível criar. Tente de novo.');
+    }catch(e){this.erro='Sem conexão. Tente de novo.'}
+    this.enviando=false;
+  }
+}}
+</script>
+</body>
+</html>
