@@ -49,6 +49,7 @@
     <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
     <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="new-password"></div>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="criarConta()">Criar conta</button>
+    <p x-show="user" class="text-center text-xs text-slate-400">Já tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='login'">Entrar</button></p>
   </section>
 
   <!-- 3. Baixar (única opção depois de criar a conta) -->
@@ -69,6 +70,7 @@
     <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
     <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="current-password"></div>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrar()">Entrar</button>
+    <p class="text-center text-xs text-slate-400">Ainda não tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='cadastro'">Criar conta</button></p>
   </section>
 
   <!-- 5. App do cliente -->
