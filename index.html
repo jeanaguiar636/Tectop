@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tectop - Atendimento Exclusivo</title>
+    <title>Atendimento Exclusivo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -42,7 +42,7 @@
                         <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Fale Diretamente Com</span>
                         <h2 class="text-base font-extrabold text-white" x-text="config.nomeEmpresa"></h2>
                     </div>
-                    <span class="text-xs px-2 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tectop Secure</span>
+                    <span class="text-xs px-2 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Canal Direto</span>
                 </div>
             </div>
 
@@ -53,7 +53,7 @@
 
                 <div>
                     <label class="text-xs text-slate-300 font-medium">Seu Nome</label>
-                    <input type="text" x-model="cliente.nome" id="nomeCliente" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
+                    <input type="text" x-model="cliente.nome" placeholder="Digite seu nome..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div>
@@ -63,7 +63,7 @@
 
                 <div>
                     <label class="text-xs text-slate-300 font-medium">Descreva o defeito ou dúvida</label>
-                    <textarea x-model="cliente.relato" id="aparelhoCliente" rows="3" placeholder="O que está acontecendo?" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
+                    <textarea x-model="cliente.relato" rows="3" placeholder="O que está acontecendo? (Ex: Vazando água embaixo)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500"></textarea>
                 </div>
 
                 <!-- Botão de Anexo de Foto/Vídeo -->
@@ -85,10 +85,19 @@
                 </button>
             </div>
 
+            <!-- ÁREA DE ORÇAMENTO PRÉVIO GERADO PARA O CLIENTE -->
+            <div x-show="orcamentoSugerido" class="bg-emerald-950/30 border border-emerald-500/40 rounded-2xl p-4 shadow-xl space-y-2">
+                <h3 class="font-bold text-xs uppercase tracking-wider text-emerald-400 flex items-center">
+                    <i class="fa-solid fa-calculator mr-1"></i> Orçamento Prévio Estimado
+                </h3>
+                <p class="text-xs text-slate-300" x-text="orcamentoSugerido"></p>
+                <p class="text-[10px] text-slate-400 italic">* Valores baseados na pré-análise do defeito informado. O técnico combinará o trajeto e a visita posteriormente.</p>
+            </div>
+
             <!-- HISTÓRICO DE MENSAGENS -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
                 <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Histórico do Chat</h3>
-                <div id="chat-messages" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
                     <template x-for="msg in mensagens">
                         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
                             <div class="flex justify-between text-[10px] text-slate-400">
@@ -96,8 +105,8 @@
                                 <span x-text="new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
                             </div>
                             <p class="text-xs text-slate-200" x-text="msg.content" x-show="msg.type === 'text'"></p>
-                            <template x-if="msg.type === 'image'">
-                                <img :src="'/api/media/' + msg.content" class="rounded-lg mt-1 max-h-40 object-cover cursor-pointer" @click="window.open('/api/media/' + msg.content)">
+                            <template x-if="msg.type === 'image' || msg.type === 'file'">
+                                <img :src="msg.content" class="rounded-lg mt-1 max-h-40 object-cover cursor-pointer" @click="window.open(msg.content, '_blank')">
                             </template>
                         </div>
                     </template>
@@ -111,13 +120,13 @@
             
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color: ' + config.corPrimaria"></i> Painel Admin</h3>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Ativo</span>
+                    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-sliders mr-2" :style="'color: ' + config.corPrimaria"></i> Painel do Técnico</h3>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Admin Ativo</span>
                 </div>
 
                 <div class="space-y-3">
                     <div>
-                        <label class="text-xs text-slate-300 font-medium">Nome da sua Empresa / App</label>
+                        <label class="text-xs text-slate-300 font-medium">Nome do seu App / Negócio</label>
                         <input type="text" x-model="configTemp.nomeEmpresa" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none">
                     </div>
 
@@ -131,14 +140,14 @@
 
                     <div class="pt-2">
                         <button @click="guardarConfiguracoes()" class="w-full text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer" :style="'background-color: ' + configTemp.corPrimaria">
-                            Salvar Alterações da Empresa
+                            Salvar Configurações
                         </button>
                     </div>
                 </div>
 
-                <!-- Secção de Ficheiros e Mídias no Admin -->
+                <!-- Secção de Mídias Recebidas dos Clientes -->
                 <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-3 mt-4">
-                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-photo-film mr-1"></i> Ficheiros e Mídias dos Clientes:</h4>
+                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-photo-film mr-1"></i> Fotos e Vídeos dos Clientes:</h4>
                     <div class="space-y-2 max-h-40 overflow-y-auto">
                         <template x-for="msg in mensagens.filter(m => m.type === 'image' || m.type === 'file')">
                             <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
@@ -146,8 +155,8 @@
                                     <span class="text-[10px] font-bold text-white" x-text="msg.sender"></span>
                                     <p class="text-[10px] text-slate-400" x-text="new Date(msg.created_at).toLocaleString()"></p>
                                 </div>
-                                <a :href="'/api/media/' + msg.content" target="_blank" class="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30">
-                                    Ver Mídia
+                                <a :href="msg.content" target="_blank" rel="noopener noreferrer" class="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30">
+                                    Abrir Mídia (R2)
                                 </a>
                             </div>
                         </template>
@@ -164,113 +173,84 @@
             return {
                 modoAdmin: false,
                 config: {
-                    nomeEmpresa: 'Tectop Consertos',
+                    nomeEmpresa: 'Técnico Carlos Consertos',
                     corPrimaria: '#10b981'
                 },
-                configTemp: {
-                    nomeEmpresa: 'Tectop Consertos',
-                    corPrimaria: '#10b981'
-                },
+                configTemp: {},
                 cliente: {
                     nome: '',
-                    equipamento: 'Máquina de Lavar',
+                    equipamento: '',
                     relato: ''
                 },
+                orcamentoSugerido: '',
                 mensagens: [],
 
                 initApp() {
-                    const salvo = localStorage.getItem('tectop_config_tecnico');
-                    if(salvo) {
-                        this.config = JSON.parse(salvo);
-                        this.configTemp = { ...this.config };
-                    }
+                    this.configTemp = { ...this.config };
                     this.carregarMensagens();
-                    setInterval(() => this.carregarMensagens(), 4000);
                 },
 
                 guardarConfiguracoes() {
                     this.config = { ...this.configTemp };
-                    localStorage.setItem('tectop_config_tecnico', JSON.stringify(this.config));
                     this.modoAdmin = false;
-                    alert('Configurações atualizadas com sucesso!');
+                    alert('Configurações atualizadas!');
                 },
 
                 alternarPainelAdmin() {
                     this.modoAdmin = !this.modoAdmin;
-                    if(this.modoAdmin) {
-                        this.configTemp = { ...this.config };
-                    }
+                    if(this.modoAdmin) this.configTemp = { ...this.config };
                 },
 
                 async carregarMensagens() {
                     try {
                         const res = await fetch('/api/messages?room_id=geral');
-                        if(res.ok) {
-                            this.mensagens = await res.json();
-                        }
+                        if(res.ok) this.mensagens = await res.json();
                     } catch(e) {
-                        console.error("Erro ao sincronizar mensagens", e);
+                        console.error("Erro ao carregar mensagens", e);
                     }
                 },
 
                 async enviarSolicitacao() {
                     if(!this.cliente.nome || !this.cliente.relato) {
-                        alert('Por favor, preencha seu nome e a descrição do defeito.');
+                        alert('Preencha seu nome e a descrição.');
                         return;
                     }
-
-                    const textoCompleto = `[${this.cliente.equipamento}] ${this.cliente.relato}`;
-
+                    const texto = `[${this.cliente.equipamento || 'Aparelho'}] ${this.cliente.relato}`;
                     try {
                         const res = await fetch('/api/messages', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                room_id: 'geral',
-                                sender: this.cliente.nome,
-                                content: textoCompleto,
-                                type: 'text'
-                            })
+                            body: JSON.stringify({ room_id: 'geral', sender: this.cliente.nome, content: texto, type: 'text' })
                         });
-
-                        const resultado = await res.json();
-
                         if(res.ok) {
                             this.cliente.relato = '';
                             this.carregarMensagens();
-                            alert('Mensagem enviada com sucesso!');
-                        } else {
-                            alert('Erro do servidor: ' + (resultado.error || 'Desconhecido'));
+                            alert('Enviado com sucesso!');
                         }
                     } catch(err) {
-                        alert('Erro de conexão: ' + err.message);
+                        alert('Erro ao enviar.');
                     }
                 },
 
                 async enviarArquivoReal(e) {
                     if(e.target.files.length === 0) return;
                     const file = e.target.files[0];
-                    const nomeCliente = this.cliente.nome || 'Cliente';
-
                     const formData = new FormData();
-                    formData.append('room_id', 'geral');
-                    formData.append('sender', nomeCliente);
                     formData.append('file', file);
+                    formData.append('sender', this.cliente.nome || 'Cliente');
+                    formData.append('room_id', 'geral');
 
                     try {
-                        const res = await fetch('/api/messages', {
-                            method: 'POST',
-                            body: formData
-                        });
-
+                        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                        const data = await res.json();
                         if(res.ok) {
+                            alert('Mídia enviada para o R2 com sucesso!');
                             this.carregarMensagens();
-                            alert('Ficheiro enviado com sucesso!');
                         } else {
-                            alert('Erro ao enviar ficheiro.');
+                            alert('Erro: ' + data.error);
                         }
                     } catch(err) {
-                        alert('Erro de conexão ao enviar ficheiro.');
+                        alert('Erro de conexão ao enviar arquivo.');
                     }
                 },
 
