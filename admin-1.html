@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Admin Tectop</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style type="text/tailwindcss">
+  [x-cloak]{display:none!important}
+  .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3}
+  .b{@apply text-[11px] font-bold px-2.5 py-1.5 rounded-lg border}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased p-4 pb-16" x-data="adm()" x-init="init()" x-cloak>
+<main class="max-w-md mx-auto space-y-4">
+  <h1 class="text-lg font-extrabold">Tectop · Administração</h1>
+  <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
+
+  <section x-show="!ok" class="card">
+    <label class="text-xs text-slate-300">Chave de administrador</label>
+    <input type="password" x-model="chave" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm" @keydown.enter="carregar()">
+    <button @click="carregar()" class="w-full bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm">Entrar</button>
+  </section>
+
+  <template x-if="ok">
+    <div class="space-y-4">
+      <div class="grid grid-cols-4 gap-2 text-center">
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length"></p><p class="text-[10px] text-slate-400">Técnicos</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[10px] text-slate-400">Assinam</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length-ativos"></p><p class="text-[10px] text-slate-400">Sem plano</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.clientes.length"></p><p class="text-[10px] text-slate-400">Clientes</p></div>
+      </div>
+      <div class="flex space-x-2">
+        <button class="b flex-1" :class="aba==='t'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-300'" @click="aba='t'">Técnicos</button>
+        <button class="b flex-1" :class="aba==='c'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-300'" @click="aba='c'">Clientes</button>
+        <button class="b border-slate-700 text-slate-300" @click="carregar()">Atualizar</button>
+      </div>
+
+      <div x-show="aba==='t'" class="space-y-3">
+        <template x-for="t in d.tecnicos" :key="t.slug">
+          <div class="card">
+            <div class="flex justify-between items-start">
+              <div><p class="font-bold text-sm" x-text="t.nome||'(sem nome)'"></p><p class="text-[11px] text-slate-400">link: ?t=<span x-text="t.slug"></span> · desde <span x-text="data(t.criado)"></span> · <span x-text="t.clientes"></span> clientes</p></div>
+              <span class="b" :class="{'bg-emerald-500/20 text-emerald-300 border-emerald-500/40':t.status==='ativo','bg-yellow-500/10 text-yellow-300 border-yellow-500/30':t.status==='teste','bg-red-500/10 text-red-300 border-red-500/30':t.status==='suspenso'}" x-text="t.status"></span>
+            </div>
+            <div class="flex space-x-2">
+              <button class="b border-emerald-500/40 text-emerald-300" @click="status(t,'ativo')">Ativar</button>
+              <button class="b border-yellow-500/30 text-yellow-300" @click="status(t,'teste')">Teste</button>
+              <button class="b border-red-500/30 text-red-300" @click="status(t,'suspenso')">Suspender</button>
+            </div>
+          </div>
+        </template>
+        <p x-show="!d.tecnicos.length" class="text-xs text-slate-400">Nenhum técnico ainda.</p>
+      </div>
+
+      <div x-show="aba==='c'" class="space-y-2">
+        <template x-for="c in d.clientes" :key="c.tel+c.criado">
+          <div class="card !p-3 flex justify-between items-center">
+            <div><p class="text-sm font-bold" x-text="c.nome"></p>
+              <p class="text-[11px] text-slate-400">veio de <span class="text-slate-200" x-text="c.tecnico||c.slug"></span> · <span x-text="data(c.criado)"></span></p></div>
+            <a :href="'https://wa.me/55'+c.tel" target="_blank" rel="noopener" class="b border-emerald-500/40 text-emerald-300" x-text="c.tel"></a>
+          </div>
+        </template>
+        <p x-show="!d.clientes.length" class="text-xs text-slate-400">Nenhum cliente cadastrado ainda.</p>
+      </div>
+    </div>
+  </template>
+</main>
+<script>
+function adm(){return{
+  chave:'',ok:false,erro:'',aba:'t',d:{tecnicos:[],clientes:[]},
+  init(){this.chave=sessionStorage.getItem('adm')||'';if(this.chave)this.carregar()},
+  async carregar(){
+    try{
+      const r=await fetch('/api/admin',{headers:{'X-Admin':this.chave}});
+      if(r.ok){this.d=await r.json();this.ok=true;this.erro='';sessionStorage.setItem('adm',this.chave)}
+      else{const e=await r.json().catch(()=>({}));this.ok=false;sessionStorage.removeItem('adm');this.erro=r.status===401?'Chave incorreta.':(e.error||'Erro no servidor.')}
+    }catch(e){this.erro='Sem conexão.'}
+  },
+  async status(t,s){
+    try{
+      const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','X-Admin':this.chave},body:JSON.stringify({slug:t.slug,status:s})});
+      if(r.ok){t.status=s;this.erro=''}else this.erro='Não foi possível alterar o status.';
+    }catch(e){this.erro='Sem conexão.'}
+  },
+  data(ms){return ms?new Date(ms).toLocaleDateString('pt-BR'):'—'},
+  get ativos(){return this.d.tecnicos.filter(t=>t.status==='ativo').length}
+}}
+</script>
+</body>
+</html>
