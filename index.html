@@ -1,136 +1,91 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tectop - Chat Técnico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 h-[100dvh] flex flex-col justify-between overflow-hidden">
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
 
-    <!-- Cabeçalho -->
-    <header class="bg-blue-600 text-white p-3 shadow-md flex justify-between items-center z-10">
-        <div class="flex items-center space-x-2">
-            <h1 class="text-base font-bold"><i class="fa-solid fa-helmet-safety mr-1"></i>Tectop</h1>
-            <span id="room-badge" class="text-[10px] bg-blue-500 px-2 py-0.5 rounded-full">Geral</span>
-        </div>
-        <div class="flex space-x-2">
-            <button onclick="alert('Funcionalidade de chamada de áudio pronta para ligar ao WebRTC')" class="bg-blue-500 hover:bg-blue-400 p-2 rounded-full text-xs"><i class="fa-solid fa-phone"></i></button>
-            <button onclick="alert('Funcionalidade de vídeo pronta')" class="bg-blue-500 hover:bg-blue-400 p-2 rounded-full text-xs"><i class="fa-solid fa-video"></i></button>
-        </div>
-    </header>
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
 
-    <!-- Corpo das Mensagens (Com scroll independente) -->
-    <main id="chat-container" class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 flex flex-col">
-        <!-- As mensagens entram aqui dinamicamente -->
-    </main>
-
-    <!-- Barra de Envio Fixa em baixo -->
-    <footer class="bg-white border-t p-2 flex items-center space-x-2 shadow-lg z-10">
-        <input type="text" id="sender-input" placeholder="Seu Nome" class="border rounded-lg px-2 py-2 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-blue-500">
-        <input type="text" id="message-input" placeholder="Escreva uma mensagem..." class="border rounded-lg px-3 py-2 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500" onkeypress="if(event.key === 'KeyE' && event.ctrlKey) sendMessage()">
+    try {
+      // Listar mensagens de uma sala
+      if (url.pathname === "/api/messages" && request.method === "GET") {
+        const roomId = url.searchParams.get("room_id") || "geral";
+        const { results } = await env.DB.prepare(
+          "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC"
+        ).bind(roomId).all();
         
-        <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 text-sm">
-            <i class="fa-solid fa-paperclip"></i>
-            <input type="file" id="file-input" class="hidden" onchange="sendFile()">
-        </label>
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
 
-        <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold">
-            <i class="fa-solid fa-paper-plane"></i>
-        </button>
-    </footer>
+      // Enviar nova mensagem ou ficheiro de mídia
+      if (url.pathname === "/api/messages" && request.method === "POST") {
+        const contentType = request.headers.get("content-type") || "";
+        let roomId, sender, content, type = "text";
 
-    <script>
-        const API_URL = window.location.origin;
-        const currentRoom = "geral";
+        if (contentType.includes("multipart/form-data")) {
+          const formData = await request.formData();
+          roomId = formData.get("room_id") || "geral";
+          sender = formData.get("sender") || "Técnico";
+          const file = formData.get("file");
 
-        async function fetchMessages() {
-            try {
-                const res = await fetch(`${API_URL}/api/messages?room_id=${currentRoom}`);
-                if (!res.ok) return;
-                const messages = await res.json();
-                const container = document.getElementById("chat-container");
-                
-                // Guarda a posição do scroll para não saltar se o user estiver a ler
-                const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-
-                container.innerHTML = "";
-
-                if (Array.isArray(messages)) {
-                    messages.forEach(msg => {
-                        const div = document.createElement("div");
-                        div.className = "flex flex-col bg-white p-2.5 rounded-xl shadow-sm max-w-[85%] border border-gray-100";
-                        
-                        let contentHtml = `<p class="text-xs text-gray-800 break-words">${escapeHtml(msg.content || '')}</p>`;
-                        if (msg.type === "image" || (msg.content && (msg.content.endsWith('.jpg') || msg.content.endsWith('.png') || msg.content.endsWith('.jpeg') || msg.content.endsWith('.webp')))) {
-                            contentHtml = `<img src="${API_URL}/api/media/${msg.content}" class="rounded-lg mt-1 max-h-40 object-cover cursor-pointer" onclick="window.open(this.src)">`;
-                        }
-
-                        div.innerHTML = `
-                            <span class="text-[10px] font-bold text-blue-600 mb-0.5">${escapeHtml(msg.sender || 'Técnico')}</span>
-                            ${contentHtml}
-                            <span class="text-[9px] text-gray-400 mt-1 text-right">${msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-                        `;
-                        container.appendChild(div);
-                    });
-
-                    if (isAtBottom || messages.length < 5) {
-                        container.scrollTop = container.scrollHeight;
-                    }
-                }
-            } catch (err) {
-                console.error("Erro ao carregar mensagens:", err);
-            }
-        }
-
-        async function sendMessage() {
-            const sender = document.getElementById("sender-input").value.trim() || "Técnico";
-            const content = document.getElementById("message-input").value.trim();
-            if (!content) return;
-
-            await fetch(`${API_URL}/api/messages`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ room_id: currentRoom, sender, content, type: "text" })
+          if (file) {
+            const fileName = `${Date.now()}-${file.name}`;
+            await env.MEDIA_BUCKET.put(fileName, file.stream(), {
+              httpMetadata: { contentType: file.type }
             });
-
-            document.getElementById("message-input").value = "";
-            fetchMessages();
+            content = fileName;
+            type = file.type.startsWith("image/") ? "image" : "file";
+          } else {
+            content = formData.get("content") || "";
+          }
+        } else {
+          const body = await request.json();
+          roomId = body.room_id || "geral";
+          sender = body.sender || "Técnico";
+          content = body.content || "";
+          type = body.type || "text";
         }
 
-        async function sendFile() {
-            const fileInput = document.getElementById("file-input");
-            if (fileInput.files.length === 0) return;
+        const id = "msg_" + Date.now() + Math.random().toString(36).substring(2, 7);
+        
+        await env.DB.prepare(
+          "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
+        ).bind(id, roomId, sender, content, type).run();
 
-            const sender = document.getElementById("sender-input").value.trim() || "Técnico";
-            const file = fileInput.files[0];
+        return new Response(JSON.stringify({ success: true, id }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
 
-            const formData = new FormData();
-            formData.append("room_id", currentRoom);
-            formData.append("sender", sender);
-            formData.append("file", file);
+      // Servir ficheiros guardados no R2
+      if (url.pathname.startsWith("/api/media/")) {
+        const fileName = url.pathname.replace("/api/media/", "");
+        const object = await env.MEDIA_BUCKET.get(fileName);
 
-            const res = await fetch(`${API_URL}/api/messages`, {
-                method: "POST",
-                body: formData
-            });
-
-            if(res.ok) {
-                fileInput.value = "";
-                fetchMessages();
-            } else {
-                alert("Erro ao enviar o ficheiro.");
-            }
+        if (!object) {
+          return new Response("Ficheiro não encontrado", { status: 404, headers: corsHeaders });
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
+        const headers = new Headers(corsHeaders);
+        object.writeHttpMetadata(headers);
+        headers.set("etag", object.httpEtag);
 
-        setInterval(fetchMessages, 3000);
-        fetchMessages();
-    </script>
-</body>
-</html>
+        return new Response(object.body, { headers });
+      }
+
+      return new Response("Endpoint não encontrado", { status: 404, headers: corsHeaders });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+  }
+};
