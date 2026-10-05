@@ -1,91 +1,84 @@
-export default {
-  async fetch(request, env, ctx) {
+export async function onRequest(context) {
+    const { request, env } = context;
     const url = new URL(request.url);
+
+    // Configuração de CORS para permitir pedidos do seu site
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Origin": "https://tectop.pages.dev",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
     };
 
+    // Responde ao pedido OPTIONS (preflight do CORS)
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
+        return new Response(null, { headers: corsHeaders });
     }
 
     try {
-      // Listar mensagens de uma sala
-      if (url.pathname === "/api/messages" && request.method === "GET") {
-        const roomId = url.searchParams.get("room_id") || "geral";
-        const { results } = await env.DB.prepare(
-          "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC"
-        ).bind(roomId).all();
-        
-        return new Response(JSON.stringify(results), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
+        // Garante que a tabela existe (cria apenas se não existir)
+        await env.DB.prepare(`
+            CREATE TABLE IF NOT EXISTS messages (
+                id TEXT PRIMARY KEY,
+                room_id TEXT,
+                sender TEXT,
+                content TEXT,
+                type TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `).run();
 
-      // Enviar nova mensagem ou ficheiro de mídia
-      if (url.pathname === "/api/messages" && request.method === "POST") {
-        const contentType = request.headers.get("content-type") || "";
-        let roomId, sender, content, type = "text";
+        // ROTA GET /api/messages: Carrega o histórico
+        if (request.method === "GET" && url.pathname === "/api/messages") {
+            const roomId = url.searchParams.get("room_id") || "geral";
 
-        if (contentType.includes("multipart/form-data")) {
-          const formData = await request.formData();
-          roomId = formData.get("room_id") || "geral";
-          sender = formData.get("sender") || "Técnico";
-          const file = formData.get("file");
+            const { results } = await env.DB.prepare(
+                "SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC LIMIT 50"
+            ).bind(roomId).all();
 
-          if (file) {
-            const fileName = `${Date.now()}-${file.name}`;
-            await env.MEDIA_BUCKET.put(fileName, file.stream(), {
-              httpMetadata: { contentType: file.type }
+            return new Response(JSON.stringify(results), {
+                headers: { "Content-Type": "application/json", ...corsHeaders }
             });
-            content = fileName;
-            type = file.type.startsWith("image/") ? "image" : "file";
-          } else {
-            content = formData.get("content") || "";
-          }
-        } else {
-          const body = await request.json();
-          roomId = body.room_id || "geral";
-          sender = body.sender || "Técnico";
-          content = body.content || "";
-          type = body.type || "text";
         }
 
-        const id = "msg_" + Date.now() + Math.random().toString(36).substring(2, 7);
-        
-        await env.DB.prepare(
-          "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
-        ).bind(id, roomId, sender, content, type).run();
+        // ROTA POST /api/messages: Envia uma nova mensagem de texto
+        if (request.method === "POST" && url.pathname === "/api/messages") {
+            const contentType = request.headers.get("content-type") || "";
 
-        return new Response(JSON.stringify({ success: true, id }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
+            if (!contentType.includes("application/json")) {
+                throw new Error("O Content-Type deve ser application/json");
+            }
+
+            const data = await request.json();
+
+            if (!data.content || data.content.trim() === "") {
+                throw new Error("O conteúdo da mensagem não pode estar vazio");
+            }
+
+            const id = crypto.randomUUID();
+            const sender = data.sender || "Anónimo";
+            const roomId = data.room_id || "geral";
+            const type = data.type || "text";
+
+            await env.DB.prepare(
+                "INSERT INTO messages (id, room_id, sender, content, type) VALUES (?, ?, ?, ?, ?)"
+            ).bind(id, roomId, sender, data.content, type).run();
+
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { "Content-Type": "application/json", ...corsHeaders }
+            });
+        }
+
+        // Se não for GET nem POST para /api/messages
+        return new Response("Rota não encontrada", {
+            status: 404,
+            headers: corsHeaders
         });
-      }
 
-      // Servir ficheiros guardados no R2
-      if (url.pathname.startsWith("/api/media/")) {
-        const fileName = url.pathname.replace("/api/media/", "");
-        const object = await env.MEDIA_BUCKET.get(fileName);
-
-        if (!object) {
-          return new Response("Ficheiro não encontrado", { status: 404, headers: corsHeaders });
-        }
-
-        const headers = new Headers(corsHeaders);
-        object.writeHttpMetadata(headers);
-        headers.set("etag", object.httpEtag);
-
-        return new Response(object.body, { headers });
-      }
-
-      return new Response("Endpoint não encontrado", { status: 404, headers: corsHeaders });
     } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+        // Captura qualquer erro e devolve-o em formato JSON (evita o erro do navegador)
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
     }
-  }
-};
+}
