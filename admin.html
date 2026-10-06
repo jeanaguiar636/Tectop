@@ -11,7 +11,7 @@
 <style type="text/tailwindcss">
   [x-cloak]{display:none!important}
   .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3}
-  .b{@apply text-[11px] font-bold px-2.5 py-1.5 rounded-lg border}
+  .b{@apply text-[12px] font-bold px-2.5 py-1.5 rounded-lg border}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased p-4 pb-16" x-data="adm()" x-init="init()" x-cloak>
@@ -21,62 +21,62 @@
   <p x-show="aviso" x-text="aviso" class="text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-900 rounded-xl p-3"></p>
 
   <section x-show="!ok" class="card">
-    <label class="text-xs text-slate-300">Chave de administrador</label>
+    <label class="text-xs text-slate-100">Chave de administrador</label>
     <input type="password" x-model="chave" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm" @keydown.enter="carregar()">
     <button @click="carregar()" class="w-full bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm">Entrar</button>
   </section>
 
   <template x-if="ok">
     <div class="space-y-4">
-      <p class="text-[11px] rounded-xl border px-3 py-2" :class="d.mp?'text-emerald-300 border-emerald-500/30 bg-emerald-950/30':'text-yellow-300 border-yellow-500/30 bg-yellow-950/20'" x-text="d.mp?'Mercado Pago: o servidor encontrou a chave MP_ACCESS_TOKEN ✓':'Mercado Pago: o servidor NÃO encontrou a chave MP_ACCESS_TOKEN'"></p>
+      <p class="text-[12px] rounded-xl border px-3 py-2" :class="d.mp?'text-emerald-300 border-emerald-500/30 bg-emerald-950/30':'text-yellow-300 border-yellow-500/30 bg-yellow-950/20'" x-text="d.mp?'Mercado Pago: o servidor encontrou a chave MP_ACCESS_TOKEN ✓':'Mercado Pago: o servidor NÃO encontrou a chave MP_ACCESS_TOKEN'"></p>
       <div class="grid grid-cols-4 gap-2 text-center">
-        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length"></p><p class="text-[10px] text-slate-400">Técnicos</p></div>
-        <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[10px] text-slate-400">Assinantes</p></div>
-        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length-ativos"></p><p class="text-[10px] text-slate-400">Não assinam</p></div>
-        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.clientes.length"></p><p class="text-[10px] text-slate-400">Clientes</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length"></p><p class="text-[11px] text-slate-200">Técnicos</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[11px] text-slate-200">Assinantes</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length-ativos"></p><p class="text-[11px] text-slate-200">Não assinam</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.clientes.length"></p><p class="text-[11px] text-slate-200">Clientes</p></div>
       </div>
       <div class="flex space-x-2">
-        <button class="b flex-1" :class="aba==='t'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-300'" @click="aba='t'">Técnicos</button>
-        <button class="b flex-1" :class="aba==='c'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-300'" @click="aba='c'">Clientes</button>
-        <button class="b border-slate-700 text-slate-300" @click="carregar()">Atualizar</button>
+        <button class="b flex-1" :class="aba==='t'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-100'" @click="aba='t'">Técnicos</button>
+        <button class="b flex-1" :class="aba==='c'?'bg-emerald-500 text-slate-950 border-emerald-500':'border-slate-700 text-slate-100'" @click="aba='c'">Clientes</button>
+        <button class="b border-slate-700 text-slate-100" @click="carregar()">Atualizar</button>
       </div>
 
       <div x-show="aba==='t'" class="space-y-3">
         <div class="flex space-x-2">
-          <button class="b flex-1" :class="filtro==='todos'?'border-slate-400 text-white':'border-slate-800 text-slate-400'" @click="filtro='todos'">Todos (<span x-text="d.tecnicos.length"></span>)</button>
-          <button class="b flex-1" :class="filtro==='ass'?'border-emerald-500 text-emerald-300':'border-slate-800 text-slate-400'" @click="filtro='ass'">Assinantes (<span x-text="ativos"></span>)</button>
-          <button class="b flex-1" :class="filtro==='nao'?'border-yellow-500 text-yellow-300':'border-slate-800 text-slate-400'" @click="filtro='nao'">Não assinam (<span x-text="d.tecnicos.length-ativos"></span>)</button>
+          <button class="b flex-1" :class="filtro==='todos'?'border-slate-400 text-white':'border-slate-800 text-slate-200'" @click="filtro='todos'">Todos (<span x-text="d.tecnicos.length"></span>)</button>
+          <button class="b flex-1" :class="filtro==='ass'?'border-emerald-500 text-emerald-300':'border-slate-800 text-slate-200'" @click="filtro='ass'">Assinantes (<span x-text="ativos"></span>)</button>
+          <button class="b flex-1" :class="filtro==='nao'?'border-yellow-500 text-yellow-300':'border-slate-800 text-slate-200'" @click="filtro='nao'">Não assinam (<span x-text="d.tecnicos.length-ativos"></span>)</button>
         </div>
         <template x-for="t in lista" :key="t.slug">
           <div class="card">
             <div class="flex justify-between items-start space-x-2">
               <div class="min-w-0">
                 <p class="font-bold text-sm truncate" x-text="t.nome||t.slug"></p>
-                <p class="text-[11px] text-slate-400">link: ?t=<span x-text="t.slug"></span> · <span x-text="t.clientes"></span> clientes · desde <span x-text="data(t.criado)"></span></p>
-                <p class="text-[11px] mt-1" :class="{'text-emerald-300':t.status==='ativo','text-yellow-300':t.status==='teste','text-red-300':t.status==='suspenso'}" x-text="sit(t)"></p>
+                <p class="text-[12px] text-slate-200">link: ?t=<span x-text="t.slug"></span> · <span x-text="t.clientes"></span> clientes · desde <span x-text="data(t.criado)"></span></p>
+                <p class="text-[12px] mt-1" :class="{'text-emerald-300':t.status==='ativo','text-yellow-300':t.status==='teste','text-red-300':t.status==='suspenso'}" x-text="sit(t)"></p>
               </div>
               <span class="b shrink-0" :class="{'bg-emerald-500/20 text-emerald-300 border-emerald-500/40':t.status==='ativo','bg-yellow-500/10 text-yellow-300 border-yellow-500/30':t.status==='teste','bg-red-500/10 text-red-300 border-red-500/30':t.status==='suspenso'}" x-text="t.status==='ativo'?'assinante':(t.status==='suspenso'?'cancelado':'teste')"></span>
             </div>
             <div class="flex flex-wrap gap-2">
               <button x-show="t.status!=='ativo'" class="b border-emerald-500/40 text-emerald-300" @click="mudar(t,'ativo')">Liberar assinatura</button>
               <button x-show="t.status!=='suspenso'" class="b border-red-500/30 text-red-300" @click="mudar(t,'suspenso')" x-text="t.status==='ativo'?'Cancelar assinatura':'Bloquear acesso'"></button>
-              <button x-show="t.status!=='ativo'" class="b border-slate-600 text-slate-300" @click="mudar(t,'teste')">Novo teste (4 dias)</button>
-              <button class="b border-slate-600 text-slate-300" @click="resetPin(t)">Redefinir PIN</button>
+              <button x-show="t.status!=='ativo'" class="b border-slate-600 text-slate-100" @click="mudar(t,'teste')">Novo teste (4 dias)</button>
+              <button class="b border-slate-600 text-slate-100" @click="resetPin(t)">Redefinir PIN</button>
             </div>
           </div>
         </template>
-        <p x-show="!lista.length" class="text-xs text-slate-400">Nenhum técnico nesta lista.</p>
+        <p x-show="!lista.length" class="text-xs text-slate-200">Nenhum técnico nesta lista.</p>
       </div>
 
       <div x-show="aba==='c'" class="space-y-2">
         <template x-for="c in d.clientes" :key="c.tel+c.criado">
           <div class="card !p-3 flex justify-between items-center">
             <div><p class="text-sm font-bold" x-text="c.nome"></p>
-              <p class="text-[11px] text-slate-400">veio de <span class="text-slate-200" x-text="c.tecnico||c.slug"></span> · <span x-text="data(c.criado)"></span></p></div>
+              <p class="text-[12px] text-slate-200">veio de <span class="text-slate-200" x-text="c.tecnico||c.slug"></span> · <span x-text="data(c.criado)"></span></p></div>
             <a :href="'https://wa.me/55'+c.tel" target="_blank" rel="noopener" class="b border-emerald-500/40 text-emerald-300" x-text="c.tel"></a>
           </div>
         </template>
-        <p x-show="!d.clientes.length" class="text-xs text-slate-400">Nenhum cliente cadastrado ainda.</p>
+        <p x-show="!d.clientes.length" class="text-xs text-slate-200">Nenhum cliente cadastrado ainda.</p>
       </div>
     </div>
   </template>
