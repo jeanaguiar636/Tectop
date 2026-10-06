@@ -203,7 +203,7 @@
 let PC=null,LOCAL=null,TOQUE=null,ACTX=null;
 function app(){return{
   tela:'inicio', slug:new URLSearchParams(location.search).get('t')||'carlos',
-  cfg:{nome:'Técnico Carlos',cor:'#10b981',base:80}, tmp:{},
+  cfg:{nome:'Atendimento Técnico',cor:'#10b981',base:80}, tmp:{},
   user:null, f:{nome:'',tel:'',senha:''}, c:{produto:'',defeito:''},
   erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, modoCh:'video', cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', tocando:false, somTimer:null, novoPin:'', novoPin2:'', aviso:'', gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
   get K(){return 'at_'+this.slug},
