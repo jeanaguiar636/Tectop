@@ -214,7 +214,7 @@ function app(){return{
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.ipr=e});
     if(this.user&&localStorage.getItem(this.K+'_on')){this.tela='app';this.carregar()}
     else if(this.user)this.tela='login';
-    if(location.hash==='#painel')this.tela='tecLogin';
+    if(location.hash==='#painel'||new URLSearchParams(location.search).get('painel'))this.tela='tecLogin';
     this.timer=setInterval(()=>{if(['app','tecnico'].includes(this.tela))this.carregar()},8000);
     setInterval(()=>this.checarToques(),3000);
   },
@@ -257,7 +257,7 @@ function app(){return{
   async assinar(){
     const r=await this.api('/api/assinar',{slug:this.slug,email:this.email});
     const d=await r.json().catch(()=>({}));
-    if(r.ok&&d.url)location.href=d.url;else this.erro=d.error||'Não foi possível abrir o pagamento.';
+    if(r.ok&&d.url)location.href=d.url;else this.erro=(d.error||'Não foi possível abrir o pagamento.')+(d.detalhe?' Motivo: '+d.detalhe:'')+(d.codigo?' (código '+d.codigo+')':'');
   },
   registrar(){if(this.user)this.api('/api/cliente',{slug:this.slug,id:this.user.id,nome:this.user.nome,tel:this.user.tel})},
   async apagar(m){
