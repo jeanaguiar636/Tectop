@@ -17,10 +17,10 @@
   [x-cloak]{display:none!important}
   .hm{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3}
-  .inp{@apply w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-slate-500}
-  .lbl{@apply text-xs text-slate-300 font-medium}
+  .inp{@apply w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-slate-500 placeholder:text-slate-400}
+  .lbl{@apply text-xs text-slate-100 font-medium}
   .btn{@apply w-full text-slate-950 font-bold py-3 rounded-xl text-sm}
-  .mini{@apply bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-center text-[11px] text-slate-300 font-medium cursor-pointer}
+  .mini{@apply bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-center text-[12px] text-slate-100 font-medium cursor-pointer}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased pb-16" x-data="app()" x-init="init()" x-cloak>
@@ -30,11 +30,11 @@
     <div class="w-10 h-10 rounded-xl text-slate-950 flex items-center justify-center" :style="'background-color:'+cfg.cor"><i class="fa-solid fa-screwdriver-wrench"></i></div>
     <div>
       <h1 class="text-sm font-bold text-white" x-text="cfg.nome"></h1>
-      <p class="text-[11px]" :style="'color:'+cfg.cor">Atendimento autorizado</p>
+      <p class="text-[12px]" :style="'color:'+cfg.cor">Atendimento autorizado</p>
     </div>
   </div>
-  <button x-show="tela==='app'" @click="sair()" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-300 border border-slate-700">Sair</button>
-  <button x-show="tela==='tecnico'" @click="tela=user?'app':'inicio'" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-300 border border-slate-700">Ver app</button>
+  <button x-show="tela==='app'" @click="sair()" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-100 border border-slate-700">Sair</button>
+  <button x-show="tela==='tecnico'" @click="tela=user?'app':'inicio'" class="text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-100 border border-slate-700">Ver app</button>
 </header>
 
 <main class="max-w-md mx-auto p-4 space-y-4">
@@ -46,7 +46,7 @@
   <section x-show="tela==='inicio'" class="card text-center">
     <img src="/icon-192.png" alt="" class="w-24 h-24 mx-auto rounded-[1.6rem] shadow-lg shadow-emerald-500/20">
     <h2 class="text-lg font-extrabold text-white">Atendimento de <span x-text="cfg.nome"></span></h2>
-    <p class="text-sm text-slate-300">Mande uma foto do defeito e receba um pré-orçamento na hora.</p>
+    <p class="text-sm text-slate-100">Mande uma foto do defeito e receba um pré-orçamento na hora.</p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="erro='';tela=user?'login':'cadastro'">Baixar aplicativo</button>
   </section>
 
@@ -57,16 +57,16 @@
     <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
     <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="new-password"></div>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="criarConta()">Criar conta</button>
-    <p x-show="user" class="text-center text-xs text-slate-400">Já tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='login'">Entrar</button></p>
+    <p x-show="user" class="text-center text-xs text-slate-200">Já tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='login'">Entrar</button></p>
   </section>
 
   <!-- 3. Baixar (única opção depois de criar a conta) -->
   <section x-show="tela==='baixar'" class="card text-center">
     <img src="/icon-192.png" alt="" class="w-20 h-20 mx-auto rounded-3xl">
     <h2 class="font-bold text-white">Conta criada!</h2>
-    <p class="text-sm text-slate-300">Baixe o aplicativo de <span x-text="cfg.nome"></span> para continuar.</p>
+    <p class="text-sm text-slate-100">Baixe o aplicativo de <span x-text="cfg.nome"></span> para continuar.</p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="baixar()">Baixar aplicativo</button>
-    <div x-show="ajuda" class="text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-3 text-left space-y-2">
+    <div x-show="ajuda" class="text-xs text-slate-100 bg-slate-950 border border-slate-800 rounded-xl p-3 text-left space-y-2">
       <p>Seu navegador não abriu a instalação sozinho. Faça assim:</p>
       <p>iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início". Android: menu do navegador e "Instalar app".</p>
       <button class="mini w-full" @click="ajuda=false;tela='app';carregar()">Já instalei, continuar</button>
@@ -76,7 +76,7 @@
   <section x-show="tela==='instalado'" class="card text-center">
     <img src="/icon-192.png" alt="" class="w-20 h-20 mx-auto rounded-3xl">
     <h2 class="font-bold text-white">App instalado!</h2>
-    <p class="text-sm text-slate-300">Procure o ícone de <span x-text="cfg.nome"></span> na tela inicial do celular e abra por ele.</p>
+    <p class="text-sm text-slate-100">Procure o ícone de <span x-text="cfg.nome"></span> na tela inicial do celular e abra por ele.</p>
     <button class="mini w-full" @click="tela='app';carregar()">Continuar aqui mesmo</button>
   </section>
 
@@ -86,7 +86,7 @@
     <div><label class="lbl">WhatsApp</label><input class="inp" x-model="f.tel" type="tel" autocomplete="tel"></div>
     <div><label class="lbl">Senha</label><input class="inp" x-model="f.senha" type="password" autocomplete="current-password"></div>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrar()">Entrar</button>
-    <p class="text-center text-xs text-slate-400">Ainda não tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='cadastro'">Criar conta</button></p>
+    <p class="text-center text-xs text-slate-200">Ainda não tem conta? <button class="underline font-bold" :style="'color:'+cfg.cor" @click="erro='';tela='cadastro'">Criar conta</button></p>
   </section>
 
   <!-- 5. App do cliente -->
@@ -106,14 +106,14 @@
     </div>
     <div x-show="orc" class="bg-emerald-950/30 border border-emerald-500/40 rounded-2xl p-4 space-y-1">
       <h3 class="font-bold text-xs text-emerald-400"><i class="fa-solid fa-calculator mr-1"></i>Pré-orçamento</h3>
-      <p class="text-xs text-slate-300" x-text="orc"></p>
+      <p class="text-xs text-slate-100" x-text="orc"></p>
     </div>
   </section>
 
   <!-- 6. Painel do técnico -->
   <template x-for="c in (tela==='tecnico'?toques:[])" :key="c.id">
     <div class="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-4 flex items-center justify-between animate-pulse">
-      <p class="text-sm text-white"><i class="fa-solid mr-2 text-emerald-400" :class="c.modo==='audio'?'fa-phone':'fa-video'"></i><span x-text="c.sender"></span> está ligando <span class="text-slate-300" x-text="c.modo==='audio'?'(voz)':'(vídeo)'"></span></p>
+      <p class="text-sm text-white"><i class="fa-solid mr-2 text-emerald-400" :class="c.modo==='audio'?'fa-phone':'fa-video'"></i><span x-text="c.sender"></span> está ligando <span class="text-slate-100" x-text="c.modo==='audio'?'(voz)':'(vídeo)'"></span></p>
       <div class="flex space-x-2">
         <button @click="recusar(c)" class="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Recusar</button>
         <button @click="atender(c)" class="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-2 rounded-lg">Atender</button>
@@ -124,14 +124,14 @@
   <section x-show="tela==='tecLogin'" class="card">
     <h2 class="font-bold text-white" x-text="temPin?'Entrar como técnico':'Crie seu PIN de técnico'"></h2>
     <input class="inp" type="password" inputmode="numeric" x-model="pinIn" :placeholder="temPin?'Digite o seu PIN':'Escolha um PIN de 4 a 8 números'">
-    <p class="text-[11px] text-slate-400" x-text="temPin?'Esqueceu o PIN? Peça ao administrador para redefinir.':'Guarde este PIN: é a chave do seu painel.'"></p>
+    <p class="text-[12px] text-slate-200" x-text="temPin?'Esqueceu o PIN? Peça ao administrador para redefinir.':'Guarde este PIN: é a chave do seu painel.'"></p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrarTec()" x-text="temPin?'Entrar':'Criar PIN'"></button>
-    <p class="text-center text-xs text-slate-400">Ainda não tem o seu app? <a href="/assinar.html" class="underline font-bold" :style="'color:'+cfg.cor">Criar o meu</a></p>
+    <p class="text-center text-xs text-slate-200">Ainda não tem o seu app? <a href="/assinar.html" class="underline font-bold" :style="'color:'+cfg.cor">Criar o meu</a></p>
   </section>
 
   <section x-show="tela==='tecnico'" class="card">
     <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-crown mr-2 text-yellow-400"></i>Sua assinatura</h3>
-    <p class="text-xs text-slate-300" x-text="textoPlano"></p>
+    <p class="text-xs text-slate-100" x-text="textoPlano"></p>
     <div x-show="plano.status!=='ativo'" class="space-y-2">
       <input class="inp" type="email" x-model="email" placeholder="Seu e-mail (usado no Mercado Pago)">
       <button class="btn" :style="'background-color:'+cfg.cor" @click="assinar()">Assinar por R$ 18/mês</button>
@@ -147,7 +147,7 @@
     <button class="btn" :style="'background-color:'+tmp.cor" @click="salvarCfg()">Salvar</button>
     <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
       <p class="lbl">Link para mandar ao cliente</p>
-      <p class="text-xs text-slate-300 break-all" x-text="link"></p>
+      <p class="text-xs text-slate-100 break-all" x-text="link"></p>
       <button class="mini w-full" @click="navigator.clipboard.writeText(link);erro=''">Copiar link</button>
     </div>
   </section>
@@ -161,12 +161,12 @@
 
   <!-- Chamados / histórico (cliente vê os dele, técnico vê todos) -->
   <section x-show="tela==='app'||tela==='tecnico'" class="card">
-    <h3 class="font-bold text-xs text-slate-400"><i class="fa-solid fa-clock-rotate-left mr-1"></i><span x-text="tela==='tecnico'?'Chamados recebidos':'Seus envios'"></span></h3>
-    <p x-show="!lista.length" class="text-xs text-slate-400">Nada por aqui ainda.</p>
+    <h3 class="font-bold text-xs text-slate-200"><i class="fa-solid fa-clock-rotate-left mr-1"></i><span x-text="tela==='tecnico'?'Chamados recebidos':'Seus envios'"></span></h3>
+    <p x-show="!lista.length" class="text-xs text-slate-200">Nada por aqui ainda.</p>
     <div class="space-y-3 max-h-96 overflow-y-auto">
       <template x-for="m in lista" :key="m.id||m.created_at">
         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-          <div class="flex justify-between text-[10px] text-slate-400">
+          <div class="flex justify-between text-[11px] text-slate-200">
             <span class="font-bold" :style="'color:'+cfg.cor" x-text="m.sender"></span>
             <span class="flex items-center space-x-3"><span x-text="hora(m)"></span><button x-show="tela==='tecnico'" @click="apagar(m)" class="text-red-400 text-xs" aria-label="Apagar"><i class="fa-solid fa-trash"></i></button></span>
           </div>
@@ -181,7 +181,7 @@
   </section>
 
   <p class="text-center" x-show="['inicio','login','cadastro'].includes(tela)">
-    <button class="text-[11px] text-slate-500 underline" @click="erro='';pinIn='';tela='tecLogin'">Sou o técnico</button>
+    <button class="text-[12px] text-slate-300 underline" @click="erro='';pinIn='';tela='tecLogin'">Sou o técnico</button>
   </p>
 </main>
 
