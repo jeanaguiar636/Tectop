@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>Admin Tectop</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style type="text/tailwindcss">
@@ -15,8 +16,9 @@
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased p-4 pb-16" x-data="adm()" x-init="init()" x-cloak>
 <main class="max-w-md mx-auto space-y-4">
-  <h1 class="text-lg font-extrabold">Tectop · Administração</h1>
+  <div class="flex items-center space-x-3"><img src="/icon-192.png" alt="" class="w-10 h-10 rounded-xl"><h1 class="text-lg font-extrabold">Tectop · Administração</h1></div>
   <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
+  <p x-show="aviso" x-text="aviso" class="text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-900 rounded-xl p-3"></p>
 
   <section x-show="!ok" class="card">
     <label class="text-xs text-slate-300">Chave de administrador</label>
@@ -28,8 +30,8 @@
     <div class="space-y-4">
       <div class="grid grid-cols-4 gap-2 text-center">
         <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length"></p><p class="text-[10px] text-slate-400">Técnicos</p></div>
-        <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[10px] text-slate-400">Assinam</p></div>
-        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length-ativos"></p><p class="text-[10px] text-slate-400">Sem plano</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[10px] text-slate-400">Assinantes</p></div>
+        <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length-ativos"></p><p class="text-[10px] text-slate-400">Não assinam</p></div>
         <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.clientes.length"></p><p class="text-[10px] text-slate-400">Clientes</p></div>
       </div>
       <div class="flex space-x-2">
@@ -39,20 +41,29 @@
       </div>
 
       <div x-show="aba==='t'" class="space-y-3">
-        <template x-for="t in d.tecnicos" :key="t.slug">
+        <div class="flex space-x-2">
+          <button class="b flex-1" :class="filtro==='todos'?'border-slate-400 text-white':'border-slate-800 text-slate-400'" @click="filtro='todos'">Todos (<span x-text="d.tecnicos.length"></span>)</button>
+          <button class="b flex-1" :class="filtro==='ass'?'border-emerald-500 text-emerald-300':'border-slate-800 text-slate-400'" @click="filtro='ass'">Assinantes (<span x-text="ativos"></span>)</button>
+          <button class="b flex-1" :class="filtro==='nao'?'border-yellow-500 text-yellow-300':'border-slate-800 text-slate-400'" @click="filtro='nao'">Não assinam (<span x-text="d.tecnicos.length-ativos"></span>)</button>
+        </div>
+        <template x-for="t in lista" :key="t.slug">
           <div class="card">
-            <div class="flex justify-between items-start">
-              <div><p class="font-bold text-sm" x-text="t.nome||'(sem nome)'"></p><p class="text-[11px] text-slate-400">link: ?t=<span x-text="t.slug"></span> · desde <span x-text="data(t.criado)"></span> · <span x-text="t.clientes"></span> clientes</p></div>
-              <span class="b" :class="{'bg-emerald-500/20 text-emerald-300 border-emerald-500/40':t.status==='ativo','bg-yellow-500/10 text-yellow-300 border-yellow-500/30':t.status==='teste','bg-red-500/10 text-red-300 border-red-500/30':t.status==='suspenso'}" x-text="t.status"></span>
+            <div class="flex justify-between items-start space-x-2">
+              <div class="min-w-0">
+                <p class="font-bold text-sm truncate" x-text="t.nome||t.slug"></p>
+                <p class="text-[11px] text-slate-400">link: ?t=<span x-text="t.slug"></span> · <span x-text="t.clientes"></span> clientes · desde <span x-text="data(t.criado)"></span></p>
+                <p class="text-[11px] mt-1" :class="{'text-emerald-300':t.status==='ativo','text-yellow-300':t.status==='teste','text-red-300':t.status==='suspenso'}" x-text="sit(t)"></p>
+              </div>
+              <span class="b shrink-0" :class="{'bg-emerald-500/20 text-emerald-300 border-emerald-500/40':t.status==='ativo','bg-yellow-500/10 text-yellow-300 border-yellow-500/30':t.status==='teste','bg-red-500/10 text-red-300 border-red-500/30':t.status==='suspenso'}" x-text="t.status==='ativo'?'assinante':(t.status==='suspenso'?'cancelado':'teste')"></span>
             </div>
-            <div class="flex space-x-2">
-              <button class="b border-emerald-500/40 text-emerald-300" @click="status(t,'ativo')">Ativar</button>
-              <button class="b border-yellow-500/30 text-yellow-300" @click="status(t,'teste')">Teste</button>
-              <button class="b border-red-500/30 text-red-300" @click="status(t,'suspenso')">Suspender</button>
+            <div class="flex flex-wrap gap-2">
+              <button x-show="t.status!=='ativo'" class="b border-emerald-500/40 text-emerald-300" @click="mudar(t,'ativo')">Liberar assinatura</button>
+              <button x-show="t.status!=='suspenso'" class="b border-red-500/30 text-red-300" @click="mudar(t,'suspenso')" x-text="t.status==='ativo'?'Cancelar assinatura':'Bloquear acesso'"></button>
+              <button x-show="t.status!=='ativo'" class="b border-slate-600 text-slate-300" @click="mudar(t,'teste')">Novo teste (4 dias)</button>
             </div>
           </div>
         </template>
-        <p x-show="!d.tecnicos.length" class="text-xs text-slate-400">Nenhum técnico ainda.</p>
+        <p x-show="!lista.length" class="text-xs text-slate-400">Nenhum técnico nesta lista.</p>
       </div>
 
       <div x-show="aba==='c'" class="space-y-2">
@@ -70,7 +81,7 @@
 </main>
 <script>
 function adm(){return{
-  chave:'',ok:false,erro:'',aba:'t',d:{tecnicos:[],clientes:[]},
+  chave:'',ok:false,erro:'',aviso:'',aba:'t',filtro:'todos',d:{tecnicos:[],clientes:[]},
   init(){this.chave=sessionStorage.getItem('adm')||'';if(this.chave)this.carregar()},
   async carregar(){
     try{
@@ -79,14 +90,28 @@ function adm(){return{
       else{const e=await r.json().catch(()=>({}));this.ok=false;sessionStorage.removeItem('adm');this.erro=r.status===401?'Chave incorreta.':(e.error||'Erro no servidor.')}
     }catch(e){this.erro='Sem conexão.'}
   },
-  async status(t,s){
+  async mudar(t,s){
+    const nome=t.nome||t.slug;
+    const msg={ativo:'Liberar a assinatura de '+nome+'?',suspenso:(t.status==='ativo'?'Cancelar a assinatura de ':'Bloquear o acesso de ')+nome+'? Os clientes dele deixam de conseguir pedir atendimento.',teste:'Dar um novo teste de 4 dias para '+nome+'?'}[s];
+    if(!confirm(msg))return;
+    this.erro='';this.aviso='';
     try{
       const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','X-Admin':this.chave},body:JSON.stringify({slug:t.slug,status:s})});
-      if(r.ok){t.status=s;this.erro=''}else this.erro='Não foi possível alterar o status.';
+      const x=await r.json().catch(()=>({}));
+      if(r.ok){this.aviso=x.mp_cancelado?'Pronto. A cobrança também foi cancelada no Mercado Pago.':'Pronto.';await this.carregar()}
+      else this.erro=x.error||'Não foi possível alterar.';
     }catch(e){this.erro='Sem conexão.'}
   },
+  sit(t){
+    if(t.status==='ativo')return t.origem==='mp'?'Assinante · paga pelo Mercado Pago':'Assinante · liberado por você';
+    if(t.status==='suspenso')return 'Cancelado · sem acesso';
+    if(!t.criado)return 'Em teste';
+    const n=Math.ceil((t.criado+4*86400000-Date.now())/86400000);
+    return n>0?'Em teste · faltam '+n+(n===1?' dia':' dias'):'Teste expirado · não assinou';
+  },
   data(ms){return ms?new Date(ms).toLocaleDateString('pt-BR'):'—'},
-  get ativos(){return this.d.tecnicos.filter(t=>t.status==='ativo').length}
+  get ativos(){return this.d.tecnicos.filter(t=>t.status==='ativo').length},
+  get lista(){return this.d.tecnicos.filter(t=>this.filtro==='todos'||(this.filtro==='ass'?t.status==='ativo':t.status!=='ativo'))}
 }}
 </script>
 </body>
