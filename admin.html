@@ -28,6 +28,7 @@
 
   <template x-if="ok">
     <div class="space-y-4">
+      <p class="text-[11px] rounded-xl border px-3 py-2" :class="d.mp?'text-emerald-300 border-emerald-500/30 bg-emerald-950/30':'text-yellow-300 border-yellow-500/30 bg-yellow-950/20'" x-text="d.mp?'Mercado Pago: o servidor encontrou a chave MP_ACCESS_TOKEN ✓':'Mercado Pago: o servidor NÃO encontrou a chave MP_ACCESS_TOKEN'"></p>
       <div class="grid grid-cols-4 gap-2 text-center">
         <div class="card !p-2"><p class="text-lg font-extrabold" x-text="d.tecnicos.length"></p><p class="text-[10px] text-slate-400">Técnicos</p></div>
         <div class="card !p-2"><p class="text-lg font-extrabold text-emerald-400" x-text="ativos"></p><p class="text-[10px] text-slate-400">Assinantes</p></div>
@@ -60,6 +61,7 @@
               <button x-show="t.status!=='ativo'" class="b border-emerald-500/40 text-emerald-300" @click="mudar(t,'ativo')">Liberar assinatura</button>
               <button x-show="t.status!=='suspenso'" class="b border-red-500/30 text-red-300" @click="mudar(t,'suspenso')" x-text="t.status==='ativo'?'Cancelar assinatura':'Bloquear acesso'"></button>
               <button x-show="t.status!=='ativo'" class="b border-slate-600 text-slate-300" @click="mudar(t,'teste')">Novo teste (4 dias)</button>
+              <button class="b border-slate-600 text-slate-300" @click="resetPin(t)">Redefinir PIN</button>
             </div>
           </div>
         </template>
@@ -81,7 +83,7 @@
 </main>
 <script>
 function adm(){return{
-  chave:'',ok:false,erro:'',aviso:'',aba:'t',filtro:'todos',d:{tecnicos:[],clientes:[]},
+  chave:'',ok:false,erro:'',aviso:'',aba:'t',filtro:'todos',d:{tecnicos:[],clientes:[],mp:false},
   init(){this.chave=sessionStorage.getItem('adm')||'';if(this.chave)this.carregar()},
   async carregar(){
     try{
@@ -100,6 +102,15 @@ function adm(){return{
       const x=await r.json().catch(()=>({}));
       if(r.ok){this.aviso=x.mp_cancelado?'Pronto. A cobrança também foi cancelada no Mercado Pago.':'Pronto.';await this.carregar()}
       else this.erro=x.error||'Não foi possível alterar.';
+    }catch(e){this.erro='Sem conexão.'}
+  },
+  async resetPin(t){
+    if(!confirm('Apagar o PIN de '+(t.nome||t.slug)+'? Ele vai criar um novo PIN no próximo acesso.'))return;
+    this.erro='';this.aviso='';
+    try{
+      const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json','X-Admin':this.chave},body:JSON.stringify({slug:t.slug,acao:'resetpin'})});
+      if(r.ok)this.aviso='PIN apagado. Avise o técnico para abrir o link, tocar em "Sou o técnico" e criar um novo PIN agora.';
+      else this.erro='Não foi possível redefinir o PIN.';
     }catch(e){this.erro='Sem conexão.'}
   },
   sit(t){
