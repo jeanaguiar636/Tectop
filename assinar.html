@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style type="text/tailwindcss">
   [x-cloak]{display:none!important}
-  .inp{@apply w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500}
+  .inp{@apply w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white mt-1 focus:outline-none focus:border-emerald-500 placeholder:text-slate-400}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased" x-data="pagina()" x-cloak>
@@ -22,9 +22,9 @@
   <header class="pt-8 pb-6 text-center space-y-4">
     <img src="/icon-192.png" alt="Tectop" class="w-24 h-24 mx-auto rounded-[1.6rem] shadow-lg shadow-emerald-500/20">
     <h1 class="text-3xl font-extrabold leading-tight">Seu próprio app de <span class="text-emerald-400">atendimento técnico</span></h1>
-    <p class="text-slate-300 text-sm">O cliente manda a foto do defeito, você recebe tudo organizado e responde por chamada de vídeo. Com o nome da sua empresa e o seu link.</p>
+    <p class="text-slate-100 text-sm">O cliente manda a foto do defeito, você recebe tudo organizado e responde por chamada de vídeo. Com o nome da sua empresa e o seu link.</p>
     <a href="#criar" class="inline-block bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-xl">Começar 4 dias grátis</a>
-    <p class="text-xs text-slate-400">Sem cartão para testar</p>
+    <p class="text-xs text-slate-200">Sem cartão para testar</p>
   </header>
 
   <section class="space-y-3 py-4">
@@ -32,7 +32,7 @@
     <template x-for="b in beneficios">
       <div class="flex items-start space-x-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
         <div class="w-9 h-9 shrink-0 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center"><i class="fa-solid" :class="b.i"></i></div>
-        <div><p class="font-bold text-sm" x-text="b.t"></p><p class="text-xs text-slate-400 mt-0.5" x-text="b.d"></p></div>
+        <div><p class="font-bold text-sm" x-text="b.t"></p><p class="text-xs text-slate-200 mt-0.5" x-text="b.d"></p></div>
       </div>
     </template>
   </section>
@@ -40,15 +40,15 @@
   <section class="py-4">
     <div class="rounded-3xl border border-emerald-500/40 bg-emerald-950/30 p-6 text-center space-y-2">
       <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Plano único</p>
-      <p class="text-5xl font-extrabold">R$ 18<span class="text-base font-medium text-slate-300">/mês</span></p>
+      <p class="text-5xl font-extrabold">R$ 18<span class="text-base font-medium text-slate-100">/mês</span></p>
       <p class="text-sm text-slate-200">4 dias grátis para testar com seus clientes</p>
-      <p class="text-xs text-slate-400">Depois você assina pelo Mercado Pago. Cancele quando quiser.</p>
+      <p class="text-xs text-slate-200">Depois você assina pelo Mercado Pago. Cancele quando quiser.</p>
     </div>
   </section>
 
   <section class="py-4 space-y-3">
     <h2 class="font-extrabold text-lg">Como começa</h2>
-    <ol class="space-y-2 text-sm text-slate-300">
+    <ol class="space-y-2 text-sm text-slate-100">
       <li><span class="text-emerald-400 font-bold">1.</span> Crie seu app abaixo, em menos de um minuto.</li>
       <li><span class="text-emerald-400 font-bold">2.</span> Mande o seu link para os clientes pelo WhatsApp.</li>
       <li><span class="text-emerald-400 font-bold">3.</span> Receba os pedidos e atenda pelo painel.</li>
@@ -59,15 +59,15 @@
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4">
       <h2 class="font-extrabold text-lg">Criar meu app</h2>
       <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
-      <div><label class="text-xs text-slate-300">Nome da sua empresa</label>
+      <div><label class="text-xs text-slate-100">Nome da sua empresa</label>
         <input class="inp" x-model="f.nome" placeholder="Ex: Carlos Refrigeração" @input="sugerir()"></div>
-      <div><label class="text-xs text-slate-300">Código do seu link</label>
+      <div><label class="text-xs text-slate-100">Código do seu link</label>
         <input class="inp" x-model="f.slug" placeholder="ex: carlos-refrigeracao" autocapitalize="none" @input="editouSlug=true">
-        <p class="text-[11px] text-slate-400 mt-1 break-all">Seu link: <span x-text="origem+'/?t='+(f.slug||'seu-codigo')"></span></p></div>
-      <div><label class="text-xs text-slate-300">Crie um PIN de 4 a 8 números</label>
+        <p class="text-[12px] text-slate-200 mt-1 break-all">Seu link: <span x-text="origem+'/?t='+(f.slug||'seu-codigo')"></span></p></div>
+      <div><label class="text-xs text-slate-100">Crie um PIN de 4 a 8 números</label>
         <input class="inp" type="password" inputmode="numeric" x-model="f.pin" placeholder="Para entrar no seu painel"></div>
       <button @click="criar()" :disabled="enviando" class="w-full bg-emerald-500 text-slate-950 font-bold py-3.5 rounded-xl disabled:opacity-60" x-text="enviando?'Criando...':'Criar meu app e testar grátis'"></button>
-      <p class="text-[11px] text-slate-500 text-center">Guarde o seu PIN. Ele é a chave do seu painel.</p>
+      <p class="text-[12px] text-slate-300 text-center">Guarde o seu PIN. Ele é a chave do seu painel.</p>
     </div>
   </section>
 </main>
