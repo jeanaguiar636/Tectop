@@ -126,6 +126,7 @@
     <input class="inp" type="password" inputmode="numeric" x-model="pinIn" :placeholder="temPin?'Digite o seu PIN':'Escolha um PIN de 4 a 8 números'">
     <p class="text-[11px] text-slate-400" x-text="temPin?'Esqueceu o PIN? Peça ao administrador para redefinir.':'Guarde este PIN: é a chave do seu painel.'"></p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrarTec()" x-text="temPin?'Entrar':'Criar PIN'"></button>
+    <p class="text-center text-xs text-slate-400">Ainda não tem o seu app? <a href="/assinar.html" class="underline font-bold" :style="'color:'+cfg.cor">Criar o meu</a></p>
   </section>
 
   <section x-show="tela==='tecnico'" class="card">
@@ -219,6 +220,7 @@ function app(){return{
   get link(){return location.origin+location.pathname+'?t='+(this.tmp.slug||this.slug)},
   get lista(){return this.msgs},
   async init(){
+    if(!new URLSearchParams(location.search).get('t')){location.replace('/assinar.html');return}
     try{const r=await fetch('/api/tecnico?slug='+this.slug);if(r.ok){const d=await r.json();for(const k in d)if(d[k]!==null&&d[k]!=='')this.cfg[k]=d[k]}}catch(e){}
     this.user=JSON.parse(localStorage.getItem(this.K+'_user')||'null');
     this.registrar();
