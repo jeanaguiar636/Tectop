@@ -243,12 +243,15 @@ export async function onRequest(context) {
           external_reference: slug,
           payer_email: email,
           auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: PRECO, currency_id: "BRL" },
-          back_url: url.origin + "/?t=" + slug + "#painel",
+          back_url: url.origin + "/?t=" + slug + "&painel=1",
           status: "pending",
         }),
       });
       const mp = await r.json().catch(() => ({}));
-      if (!r.ok || !mp.init_point) return json({ error: "O Mercado Pago não aceitou o pedido. Confira o e-mail e tente de novo." }, 502);
+      if (!r.ok || !mp.init_point) {
+        const detalhe = String(mp.message || mp.error || "").slice(0, 200);
+        return json({ error: "O Mercado Pago não aceitou o pedido.", detalhe, codigo: r.status }, 502);
+      }
       return json({ url: mp.init_point });
     }
 
