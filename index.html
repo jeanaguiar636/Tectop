@@ -40,6 +40,7 @@
 <main class="max-w-md mx-auto p-4 space-y-4">
 
   <p x-show="erro" x-text="erro" class="text-xs text-red-300 bg-red-950/40 border border-red-900 rounded-xl p-3"></p>
+  <p x-show="aviso" x-text="aviso" class="text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-900 rounded-xl p-3"></p>
 
   <!-- 1. Página inicial do link do técnico -->
   <section x-show="tela==='inicio'" class="card text-center">
@@ -122,7 +123,8 @@
 
   <section x-show="tela==='tecLogin'" class="card">
     <h2 class="font-bold text-white" x-text="temPin?'Entrar como técnico':'Crie seu PIN de técnico'"></h2>
-    <input class="inp" type="password" inputmode="numeric" x-model="pinIn" placeholder="PIN (4 a 8 números)">
+    <input class="inp" type="password" inputmode="numeric" x-model="pinIn" :placeholder="temPin?'Digite o seu PIN':'Escolha um PIN de 4 a 8 números'">
+    <p class="text-[11px] text-slate-400" x-text="temPin?'Esqueceu o PIN? Peça ao administrador para redefinir.':'Guarde este PIN: é a chave do seu painel.'"></p>
     <button class="btn" :style="'background-color:'+cfg.cor" @click="entrarTec()" x-text="temPin?'Entrar':'Criar PIN'"></button>
   </section>
 
@@ -147,6 +149,13 @@
       <p class="text-xs text-slate-300 break-all" x-text="link"></p>
       <button class="mini w-full" @click="navigator.clipboard.writeText(link);erro=''">Copiar link</button>
     </div>
+  </section>
+
+  <section x-show="tela==='tecnico'" class="card">
+    <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-key mr-2" :style="'color:'+cfg.cor"></i>Alterar PIN</h3>
+    <input class="inp" type="password" inputmode="numeric" x-model="novoPin" placeholder="Novo PIN (4 a 8 números)">
+    <input class="inp" type="password" inputmode="numeric" x-model="novoPin2" placeholder="Repita o novo PIN">
+    <button class="btn" :style="'background-color:'+cfg.cor" @click="trocarPin()">Salvar novo PIN</button>
   </section>
 
   <!-- Chamados / histórico (cliente vê os dele, técnico vê todos) -->
@@ -195,7 +204,7 @@ function app(){return{
   tela:'inicio', slug:new URLSearchParams(location.search).get('t')||'carlos',
   cfg:{nome:'Técnico Carlos',cor:'#10b981',base:80}, tmp:{},
   user:null, f:{nome:'',tel:'',senha:''}, c:{produto:'',defeito:''},
-  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, modoCh:'video', cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', tocando:false, somTimer:null, gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
+  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, modoCh:'video', cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', tocando:false, somTimer:null, novoPin:'', novoPin2:'', aviso:'', gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
   get K(){return 'at_'+this.slug},
   get temPin(){return !!this.cfg.tem_pin},
   get bloqueado(){return this.cfg.ativo===false},
@@ -265,6 +274,14 @@ function app(){return{
     const r=await this.api('/api/assinar',{slug:this.slug,email:this.email});
     const d=await r.json().catch(()=>({}));
     if(r.ok&&d.url)location.href=d.url;else this.erro=(d.error||'Não foi possível abrir o pagamento.')+(d.detalhe?' Motivo: '+d.detalhe:'')+(d.codigo?' (código '+d.codigo+')':'');
+  },
+  async trocarPin(){
+    this.erro='';this.aviso='';
+    if(!/^\d{4,8}$/.test(this.novoPin)){this.erro='O novo PIN precisa ter de 4 a 8 números.';return}
+    if(this.novoPin!==this.novoPin2){this.erro='Os dois PINs não são iguais.';return}
+    const r=await this.api('/api/tecnico',{slug:this.slug,pin:this.pinSessao,acao:'trocar_pin',novo:this.novoPin});
+    if(r.ok){this.pinSessao=this.novoPin;this.novoPin='';this.novoPin2='';this.aviso='PIN alterado. Use o novo PIN da próxima vez.'}
+    else this.erro='Não foi possível alterar o PIN. Tente de novo.';
   },
   registrar(){if(this.user)this.api('/api/cliente',{slug:this.slug,id:this.user.id,nome:this.user.nome,tel:this.user.tel})},
   async apagar(m){
