@@ -72,9 +72,9 @@ export async function onRequest(context) {
     // ---- Técnico: ler configuração pública ----
     if (url.pathname === "/api/tecnico" && request.method === "GET") {
       const slug = url.searchParams.get("slug") || "";
-      const row = await env.DB.prepare("SELECT nome, cor, base FROM tecnicos WHERE slug = ?").bind(slug).first();
+      const row = await env.DB.prepare("SELECT nome, cor, base, (pin_hash IS NOT NULL) AS tem_pin FROM tecnicos WHERE slug = ?").bind(slug).first();
       const ativo = await acessoOk(env, slug);
-      return json(row ? { ...row, tem_pin: true, ativo } : { tem_pin: false, ativo });
+      return json(row ? { ...row, tem_pin: !!row.tem_pin, ativo } : { tem_pin: false, ativo });
     }
 
     // ---- Técnico: entrar / criar / salvar (o primeiro PIN registra o código) ----
@@ -90,8 +90,16 @@ export async function onRequest(context) {
       if (d.acao === "criar" && row) return json({ error: "Esse código de link já está em uso" }, 409);
       if (!row) {
         await env.DB.prepare("INSERT INTO tecnicos (slug, pin_hash, criado, status) VALUES (?, ?, ?, 'teste')").bind(slug, h, Date.now()).run();
+      } else if (!row.pin_hash) {
+        await env.DB.prepare("UPDATE tecnicos SET pin_hash = ? WHERE slug = ?").bind(h, slug).run();
       } else if (row.pin_hash !== h) {
         return json({ error: "PIN incorreto" }, 401);
+      }
+      if (d.acao === "trocar_pin") {
+        const novo = String(d.novo || "");
+        if (!/^\d{4,8}$/.test(novo)) return json({ error: "O novo PIN precisa ter de 4 a 8 números" }, 400);
+        await env.DB.prepare("UPDATE tecnicos SET pin_hash = ? WHERE slug = ?").bind(await hashPin(slug, novo), slug).run();
+        return json({ ok: true });
       }
       if (d.acao === "login") {
         const info = await env.DB.prepare("SELECT status, criado FROM tecnicos WHERE slug = ?").bind(slug).first();
@@ -175,6 +183,10 @@ export async function onRequest(context) {
       if (!adminOk(request, env)) return json({ error: "Não autorizado" }, 401);
       if (request.method === "POST") {
         const d = await request.json();
+        if (d.acao === "resetpin") {
+          await env.DB.prepare("UPDATE tecnicos SET pin_hash = NULL WHERE slug = ?").bind(String(d.slug || "")).run();
+          return json({ ok: true });
+        }
         if (!["teste", "ativo", "suspenso"].includes(d.status)) throw new Error("Status inválido");
         const slug = String(d.slug || "");
         const t = await env.DB.prepare("SELECT mp_id FROM tecnicos WHERE slug = ?").bind(slug).first();
@@ -373,4 +385,3 @@ export async function onRequest(context) {
     return json({ error: err.message }, 500);
   }
 }
-
