@@ -40,7 +40,7 @@ const PRECO = 18; // R$ por mês
 // true se o técnico pode atender: assinatura ativa ou ainda dentro dos 4 dias de teste
 async function acessoOk(env, slug) {
   const r = await env.DB.prepare("SELECT status, criado FROM tecnicos WHERE slug = ?").bind(slug).first();
-  if (!r) return true;
+  if (!r) return false; // código de link que não existe
   if (r.status === "ativo") return true;
   if (r.status === "suspenso") return false;
   return !r.criado || Date.now() < r.criado + TESTE_MS;
