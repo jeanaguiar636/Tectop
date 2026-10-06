@@ -27,7 +27,7 @@ async function preparar(db) {
     id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, de TEXT, tipo TEXT, dados TEXT)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS clientes (
     id TEXT PRIMARY KEY, slug TEXT, nome TEXT, tel TEXT, criado INTEGER)`).run();
-  for (const col of ["criado INTEGER", "status TEXT"]) {
+  for (const col of ["criado INTEGER", "status TEXT", "mp_id TEXT", "origem TEXT"]) {
     try { await db.prepare(`ALTER TABLE tecnicos ADD COLUMN ${col}`).run(); } catch (e) {}
   }
   pronto = true;
@@ -175,11 +175,31 @@ export async function onRequest(context) {
       if (request.method === "POST") {
         const d = await request.json();
         if (!["teste", "ativo", "suspenso"].includes(d.status)) throw new Error("Status inválido");
-        await env.DB.prepare("UPDATE tecnicos SET status = ? WHERE slug = ?").bind(d.status, String(d.slug || "")).run();
-        return json({ ok: true });
+        const slug = String(d.slug || "");
+        const t = await env.DB.prepare("SELECT mp_id FROM tecnicos WHERE slug = ?").bind(slug).first();
+        if (!t) return json({ error: "Técnico não encontrado" }, 404);
+        let mpCancelado = false;
+        if (d.status === "ativo") {
+          await env.DB.prepare("UPDATE tecnicos SET status = 'ativo', origem = CASE WHEN origem = 'mp' THEN 'mp' ELSE 'manual' END WHERE slug = ?").bind(slug).run();
+        } else if (d.status === "teste") {
+          await env.DB.prepare("UPDATE tecnicos SET status = 'teste', criado = ?, origem = NULL WHERE slug = ?").bind(Date.now(), slug).run();
+        } else {
+          // Cancelar: se o técnico paga pelo Mercado Pago, cancela a cobrança lá também
+          if (t.mp_id && env.MP_ACCESS_TOKEN) {
+            const r = await fetch("https://api.mercadopago.com/preapproval/" + encodeURIComponent(t.mp_id), {
+              method: "PUT",
+              headers: { Authorization: "Bearer " + env.MP_ACCESS_TOKEN, "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "cancelled" }),
+            });
+            if (!r.ok) return json({ error: "Não consegui cancelar a cobrança no Mercado Pago. Nada foi alterado. Tente de novo." }, 502);
+            mpCancelado = true;
+          }
+          await env.DB.prepare("UPDATE tecnicos SET status = 'suspenso' WHERE slug = ?").bind(slug).run();
+        }
+        return json({ ok: true, mp_cancelado: mpCancelado });
       }
       const t = await env.DB.prepare(
-        `SELECT t.slug, t.nome, COALESCE(t.status, 'teste') AS status, t.criado,
+        `SELECT t.slug, t.nome, COALESCE(t.status, 'teste') AS status, t.criado, t.origem, (t.mp_id IS NOT NULL) AS tem_mp,
                 (SELECT COUNT(*) FROM clientes c WHERE c.slug = t.slug) AS clientes
          FROM tecnicos t ORDER BY t.criado DESC`).all();
       const c = await env.DB.prepare(
@@ -252,7 +272,7 @@ export async function onRequest(context) {
           const a = await r.json();
           const slug = String(a.external_reference || "");
           const st = a.status === "authorized" ? "ativo" : (a.status === "cancelled" || a.status === "paused") ? "suspenso" : null;
-          if (slug && st) await env.DB.prepare("UPDATE tecnicos SET status = ? WHERE slug = ?").bind(st, slug).run();
+          if (slug && st) await env.DB.prepare("UPDATE tecnicos SET status = ?, mp_id = ?, origem = 'mp' WHERE slug = ?").bind(st, String(a.id || id), slug).run();
         }
       }
       return json({ ok: true });
