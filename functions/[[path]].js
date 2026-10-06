@@ -30,6 +30,7 @@ async function preparar(db) {
   for (const col of ["criado INTEGER", "status TEXT", "mp_id TEXT", "origem TEXT"]) {
     try { await db.prepare(`ALTER TABLE tecnicos ADD COLUMN ${col}`).run(); } catch (e) {}
   }
+  try { await db.prepare("ALTER TABLE calls ADD COLUMN modo TEXT").run(); } catch (e) {}
   pronto = true;
 }
 
@@ -116,7 +117,7 @@ export async function onRequest(context) {
       if (slug) {
         if (!(await pinConfere(env, slug, request.headers.get("X-Pin")))) return json({ error: "Não autorizado" }, 401);
         const { results } = await env.DB.prepare(
-          "SELECT id, sender FROM calls WHERE status = 'ringing' AND criado > ? AND room_id LIKE ? ORDER BY criado DESC"
+          "SELECT id, sender, modo FROM calls WHERE status = 'ringing' AND criado > ? AND room_id LIKE ? ORDER BY criado DESC"
         ).bind(Date.now() - 45000, slug + ":%").all();
         return json(results);
       }
@@ -135,8 +136,8 @@ export async function onRequest(context) {
         if (!d.room_id) throw new Error("Informe a sala");
         if (!(await acessoOk(env, String(d.room_id).split(":")[0]))) return json({ error: "Atendimento indisponível no momento" }, 402);
         const id = crypto.randomUUID();
-        await env.DB.prepare("INSERT INTO calls (id, room_id, sender, status, criado) VALUES (?, ?, ?, 'ringing', ?)")
-          .bind(id, String(d.room_id).slice(0, 100), String(d.sender || "Cliente").slice(0, 60), Date.now()).run();
+        await env.DB.prepare("INSERT INTO calls (id, room_id, sender, status, criado, modo) VALUES (?, ?, ?, 'ringing', ?, ?)")
+          .bind(id, String(d.room_id).slice(0, 100), String(d.sender || "Cliente").slice(0, 60), Date.now(), d.modo === "audio" ? "audio" : "video").run();
         return json({ id });
       }
       if (d.acao === "sinal") {
@@ -205,7 +206,7 @@ export async function onRequest(context) {
       const c = await env.DB.prepare(
         `SELECT c.nome, c.tel, c.slug, c.criado, t.nome AS tecnico
          FROM clientes c LEFT JOIN tecnicos t ON t.slug = c.slug ORDER BY c.criado DESC LIMIT 500`).all();
-      return json({ tecnicos: t.results, clientes: c.results });
+      return json({ tecnicos: t.results, clientes: c.results, mp: !!env.MP_ACCESS_TOKEN });
     }
 
     // ---- Manifest do app instalável (nome e link próprios de cada técnico) ----
@@ -372,3 +373,4 @@ export async function onRequest(context) {
     return json({ error: err.message }, 500);
   }
 }
+
