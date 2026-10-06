@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style type="text/tailwindcss">
   [x-cloak]{display:none!important}
+  .hm{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   .card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3}
   .inp{@apply w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white mt-1 focus:outline-none focus:border-slate-500}
   .lbl{@apply text-xs text-slate-300 font-medium}
@@ -94,10 +95,11 @@
       <h3 class="font-bold text-sm text-white"><i class="fa-solid fa-message mr-2" :style="'color:'+cfg.cor"></i>Pedir pré-orçamento</h3>
       <div><label class="lbl">Nome do produto</label><input class="inp" x-model="c.produto" placeholder="Ex: Geladeira, moto, celular"></div>
       <div><label class="lbl">Descrição do defeito</label><textarea class="inp" rows="3" x-model="c.defeito" placeholder="O que está acontecendo?"></textarea></div>
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-2 gap-2">
         <label class="mini"><i class="fa-solid fa-camera block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Foto / vídeo<input type="file" accept="image/*,video/*" class="hidden" @change="arquivo($event)"></label>
-        <button class="mini" @click="gravar()"><i class="fa-solid block mb-1 text-sm" :class="gravando?'fa-stop text-red-400':'fa-microphone'" :style="gravando?'':'color:'+cfg.cor"></i><span x-text="gravando?'Parar e enviar':'Áudio'"></span></button>
-        <button class="mini" @click="chamar()"><i class="fa-solid fa-video block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Vídeo ao vivo</button>
+        <button class="mini" @click="gravar()"><i class="fa-solid block mb-1 text-sm" :class="gravando?'fa-stop text-red-400':'fa-microphone'" :style="gravando?'':'color:'+cfg.cor"></i><span x-text="gravando?'Parar e enviar':'Gravar áudio'"></span></button>
+        <button class="mini" @click="chamar('audio')"><i class="fa-solid fa-phone block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Chamada de voz</button>
+        <button class="mini" @click="chamar('video')"><i class="fa-solid fa-video block mb-1 text-sm" :style="'color:'+cfg.cor"></i>Vídeo ao vivo</button>
       </div>
       <button class="btn" :style="'background-color:'+cfg.cor" @click="enviar()">Enviar para <span x-text="cfg.nome"></span></button>
     </div>
@@ -110,7 +112,7 @@
   <!-- 6. Painel do técnico -->
   <template x-for="c in (tela==='tecnico'?toques:[])" :key="c.id">
     <div class="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-4 flex items-center justify-between animate-pulse">
-      <p class="text-sm text-white"><i class="fa-solid fa-video mr-2 text-emerald-400"></i><span x-text="c.sender"></span> está ligando</p>
+      <p class="text-sm text-white"><i class="fa-solid mr-2 text-emerald-400" :class="c.modo==='audio'?'fa-phone':'fa-video'"></i><span x-text="c.sender"></span> está ligando <span class="text-slate-300" x-text="c.modo==='audio'?'(voz)':'(vídeo)'"></span></p>
       <div class="flex space-x-2">
         <button @click="recusar(c)" class="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-lg">Recusar</button>
         <button @click="atender(c)" class="bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-2 rounded-lg">Atender</button>
@@ -174,22 +176,26 @@
 </main>
 
 <div x-show="emChamada" class="fixed inset-0 z-[100] bg-black flex flex-col">
-  <video x-ref="vRemoto" autoplay playsinline class="flex-1 w-full object-cover bg-slate-900"></video>
-  <video x-ref="vLocal" autoplay playsinline muted class="absolute top-4 right-4 w-28 h-40 object-cover rounded-xl border border-slate-700 bg-slate-800"></video>
+  <video x-ref="vRemoto" autoplay playsinline :class="modoCh==='audio'?'hm':'flex-1 w-full object-cover bg-slate-900'"></video>
+  <video x-ref="vLocal" autoplay playsinline muted x-show="modoCh==='video'" class="absolute top-4 right-4 w-28 h-40 object-cover rounded-xl border border-slate-700 bg-slate-800"></video>
+  <div x-show="modoCh==='audio'" class="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-slate-950">
+    <img src="/icon-192.png" alt="" class="w-28 h-28 rounded-3xl animate-pulse">
+    <p class="text-white font-bold">Chamada de voz</p>
+  </div>
   <p class="absolute top-4 left-4 text-sm text-white bg-black/60 px-3 py-1 rounded-full" x-text="cstatus"></p>
   <div class="absolute bottom-8 inset-x-0 flex justify-center space-x-4">
     <button @click="alternarMudo()" class="w-14 h-14 rounded-full bg-slate-800 text-white"><i class="fa-solid" :class="mudo?'fa-microphone-slash text-red-400':'fa-microphone'"></i></button>
     <button @click="encerrar(true)" class="w-14 h-14 rounded-full bg-red-600 text-white"><i class="fa-solid fa-phone-slash"></i></button>
-    <button @click="alternarVideo()" class="w-14 h-14 rounded-full bg-slate-800 text-white"><i class="fa-solid" :class="semVideo?'fa-video-slash text-red-400':'fa-video'"></i></button>
+    <button x-show="modoCh==='video'" @click="alternarVideo()" class="w-14 h-14 rounded-full bg-slate-800 text-white"><i class="fa-solid" :class="semVideo?'fa-video-slash text-red-400':'fa-video'"></i></button>
   </div>
 </div>
 <script>
-let PC=null,LOCAL=null;
+let PC=null,LOCAL=null,TOQUE=null,ACTX=null;
 function app(){return{
   tela:'inicio', slug:new URLSearchParams(location.search).get('t')||'carlos',
   cfg:{nome:'Técnico Carlos',cor:'#10b981',base:80}, tmp:{},
   user:null, f:{nome:'',tel:'',senha:''}, c:{produto:'',defeito:''},
-  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
+  erro:'', orc:'', msgs:[], pinSessao:'', emChamada:false, modoCh:'video', cstatus:'', callId:'', papel:'c', apos:0, pend:[], pollT:null, tempo:null, toques:[], mudo:false, semVideo:false, ocupado:false, plano:{status:'',fim:null}, email:'', tocando:false, somTimer:null, gravando:false, rec:null, chunks:[], ipr:null, ajuda:false, pinIn:'', timer:null,
   get K(){return 'at_'+this.slug},
   get temPin(){return !!this.cfg.tem_pin},
   get bloqueado(){return this.cfg.ativo===false},
@@ -209,6 +215,7 @@ function app(){return{
     this.registrar();
     document.title=this.cfg.nome;
     this.manifest();
+    this.prepararSom();
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     window.addEventListener('appinstalled',()=>{if(['inicio','cadastro','baixar','login'].includes(this.tela))this.tela='instalado'});
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.ipr=e});
@@ -322,9 +329,32 @@ function app(){return{
     }catch(e){this.erro='Permita o uso do microfone para gravar áudio.'}
   },
   ICE:{iceServers:[{urls:'stun:stun.cloudflare.com:3478'}]},
-  async midia(){
-    try{return await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:true})}
-    catch(e){this.erro='Permita câmera e microfone para fazer a chamada.';return null}
+  async prepararSom(){
+    try{
+      const r=await fetch('/toque.mp3',{method:'HEAD'});
+      if(r.ok&&(r.headers.get('content-type')||'').includes('audio')){TOQUE=new Audio('/toque.mp3');TOQUE.loop=true}
+    }catch(e){}
+  },
+  tocar(){
+    this.tocando=true;
+    if(TOQUE){TOQUE.currentTime=0;TOQUE.play().catch(()=>{});return}
+    try{
+      ACTX=ACTX||new (window.AudioContext||window.webkitAudioContext)();ACTX.resume();
+      const bip=()=>{const t=ACTX.currentTime;[0,0.35].forEach(d=>{
+        const o=ACTX.createOscillator(),g=ACTX.createGain();o.frequency.value=440;o.connect(g);g.connect(ACTX.destination);
+        g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(0.25,t+d+0.03);g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.28);
+        o.start(t+d);o.stop(t+d+0.3)})};
+      bip();this.somTimer=setInterval(bip,2000);
+    }catch(e){}
+  },
+  parar(){
+    this.tocando=false;
+    if(TOQUE){TOQUE.pause();TOQUE.currentTime=0}
+    clearInterval(this.somTimer);this.somTimer=null;
+  },
+  async midia(modo){
+    try{return await navigator.mediaDevices.getUserMedia({video:modo==='audio'?false:{facingMode:'user'},audio:true})}
+    catch(e){this.erro=modo==='audio'?'Permita o uso do microfone para fazer a chamada.':'Permita câmera e microfone para fazer a chamada.';return null}
   },
   async sinal(tipo,dados){
     try{await fetch('/api/call',{method:'POST',headers:{'Content-Type':'application/json','X-Pin':this.pinSessao},body:JSON.stringify({acao:'sinal',id:this.callId,de:this.papel,tipo,dados:dados?JSON.stringify(dados):''})})}catch(e){}
@@ -333,32 +363,33 @@ function app(){return{
     LOCAL=stream;this.$refs.vLocal.srcObject=stream;
     const pc=PC=new RTCPeerConnection(this.ICE);
     stream.getTracks().forEach(t=>pc.addTrack(t,stream));
-    pc.ontrack=e=>{this.$refs.vRemoto.srcObject=e.streams[0];this.cstatus='Em chamada';clearTimeout(this.tempo)};
+    pc.ontrack=e=>{this.$refs.vRemoto.srcObject=e.streams[0];this.cstatus='Em chamada';clearTimeout(this.tempo);this.parar()};
     pc.onicecandidate=e=>{if(e.candidate)this.sinal('ice',e.candidate)};
     pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'){this.erro='Não foi possível conectar a chamada. A rede pode estar bloqueando.';this.encerrar(true)}};
     this.apos=0;this.pend=[];
     this.pollT=setInterval(()=>this.ouvir(),1000);
   },
-  async chamar(){
-    const st=await this.midia();if(!st)return;
-    const r=await this.api('/api/call',{acao:'ligar',room_id:this.sala,sender:this.user.nome});
+  async chamar(modo='video'){
+    const st=await this.midia(modo);if(!st)return;
+    const r=await this.api('/api/call',{acao:'ligar',room_id:this.sala,sender:this.user.nome,modo});
     if(!r.ok){st.getTracks().forEach(t=>t.stop());this.erro='Não foi possível iniciar a chamada.';return}
-    this.callId=(await r.json()).id;this.papel='c';this.emChamada=true;this.cstatus='Chamando...';this.erro='';
+    this.callId=(await r.json()).id;this.modoCh=modo;this.papel='c';this.emChamada=true;this.cstatus='Chamando...';this.erro='';
     this.montar(st);
-    const o=await PC.createOffer();await PC.setLocalDescription(o);await this.sinal('offer',PC.localDescription);
+    const o=await PC.createOffer();await PC.setLocalDescription(o);await this.sinal('offer',PC.localDescription);this.tocar();
     this.tempo=setTimeout(()=>{if(this.cstatus==='Chamando...'){this.erro='O técnico não atendeu. Tente de novo ou mande uma mensagem.';this.encerrar(true)}},45000);
   },
   async atender(c){
-    const st=await this.midia();if(!st)return;
-    this.callId=c.id;this.papel='t';this.toques=this.toques.filter(x=>x.id!==c.id);this.emChamada=true;this.cstatus='Conectando...';this.erro='';
+    const modo=c.modo==='audio'?'audio':'video';
+    const st=await this.midia(modo);if(!st)return;
+    this.parar();this.modoCh=modo;this.callId=c.id;this.papel='t';this.toques=this.toques.filter(x=>x.id!==c.id);this.emChamada=true;this.cstatus='Conectando...';this.erro='';
     this.montar(st);
   },
   async recusar(c){
-    this.callId=c.id;this.papel='t';await this.sinal('fim');this.callId='';this.toques=this.toques.filter(x=>x.id!==c.id);
+    this.parar();this.callId=c.id;this.papel='t';await this.sinal('fim');this.callId='';this.toques=this.toques.filter(x=>x.id!==c.id);
   },
   async checarToques(){
     if(this.tela!=='tecnico'||this.emChamada||!this.pinSessao)return;
-    try{const r=await fetch('/api/call?slug='+this.slug,{headers:{'X-Pin':this.pinSessao}});if(r.ok)this.toques=await r.json()}catch(e){}
+    try{const r=await fetch('/api/call?slug='+this.slug,{headers:{'X-Pin':this.pinSessao}});if(r.ok){this.toques=await r.json();if(this.toques.length&&!this.tocando){this.tocar();navigator.vibrate&&navigator.vibrate([400,200,400])}else if(!this.toques.length&&this.tocando)this.parar()}}catch(e){}
   },
   async ouvir(){
     if(!this.callId||this.ocupado)return;
@@ -382,11 +413,11 @@ function app(){return{
   },
   async drenar(){for(const c of this.pend)await PC.addIceCandidate(c).catch(()=>{});this.pend=[]},
   async encerrar(enviar){
-    clearInterval(this.pollT);clearTimeout(this.tempo);
+    clearInterval(this.pollT);clearTimeout(this.tempo);this.parar();
     if(enviar&&this.callId)await this.sinal('fim');
     if(PC){PC.close();PC=null}
     if(LOCAL){LOCAL.getTracks().forEach(t=>t.stop());LOCAL=null}
-    this.callId='';this.emChamada=false;this.mudo=false;this.semVideo=false;this.cstatus='';
+    this.callId='';this.emChamada=false;this.modoCh='video';this.mudo=false;this.semVideo=false;this.cstatus='';
   },
   alternarMudo(){this.mudo=!this.mudo;LOCAL&&LOCAL.getAudioTracks().forEach(t=>t.enabled=!this.mudo)},
   alternarVideo(){this.semVideo=!this.semVideo;LOCAL&&LOCAL.getVideoTracks().forEach(t=>t.enabled=!this.semVideo)},
